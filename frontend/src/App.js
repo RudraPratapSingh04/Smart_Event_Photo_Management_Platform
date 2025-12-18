@@ -17,8 +17,9 @@ function App() {
     setSuccess("");
     setIsLoading(true);
     try {
+      
       const response = await fetch(
-        "http://localhost:8000/api/send-login-otp/",
+        "http://localhost:8000/api/send-otp/",
         {
           method: "POST",
           headers: {
@@ -27,16 +28,19 @@ function App() {
           body: JSON.stringify({ username, password }),
         }
       );
-      const data = response.json();
+      
+      const data = await response.json();
+       
       if (response.ok) {
+       
         setSuccess(data.message);
         setUserId(data.user_id);
-        setShowOtpInput = true;
+        setShowOtpInput(true);
       } else {
         setError(data.error || "Failed to Send OTP");
       }
     } catch (err) {
-      setError("Try again");
+      setError("Try again in 5 minutes");
     } finally {
       setIsLoading(false);
     }
@@ -49,7 +53,7 @@ function App() {
     setIsLoading(true);
     try {
       const response = await fetch(
-        "http://localhost:8000/api/verify-login-otp/",
+        "http://localhost:8000/api/verify-otp/",
         {
           method: "POST",
           headers: {
@@ -68,6 +72,7 @@ function App() {
       }
         else{
           setError(data.error || 'Invalid OTP');
+          setOtp('');
         }
       }
       catch(err){
@@ -85,9 +90,10 @@ function App() {
       setError("");
       setSuccess("");
       setIsLoading(true);
+      setOtp('');
           try {
       const response = await fetch(
-        "http://localhost:8000/api/resend-login-otp/",
+        "http://localhost:8000/api/resend-otp/",
         {
           method: "POST",
           headers: {

@@ -31,10 +31,11 @@ class OTPVerification(models.Model):
               if not self.otp_code:
                      self.otp_code=str(random.randint(100000,999999))
               if not self.valid_till:
-                     datetime.now()+timedelta(minutes=10)
+                     self.valid_till=datetime.now()+timedelta(minutes=10)
+              super().save(*args,**kwargs)
        def is_valid(self):
         from django.utils import timezone
-        return not self.is_used and timezone.now() < self.expires_at
+        return not self.is_used and timezone.now() < self.valid_till
     
        def __str__(self):
         return f"OTP for {self.user.username}: {self.otp_code}"
