@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
+import random
+from datetime import datetime,timedelta
 
 # Create your models here.
 
@@ -18,6 +20,24 @@ class Profile(models.Model):
       joined_at=models.DateTimeField(auto_now_add=True)
 def __str__(self):
         return self.user.username
+class OTPVerification(models.Model):
+       user=models.ForeignKey(User,on_delete=models.CASCADE)
+       otp_code=models.CharField(max_length=6)
+       created_at=models.DateTimeField(auto_now_add=True)
+       valid_till=models.DateTimeField()
+       is_used=models.BooleanField(default=False)
+
+       def save(self,*args,**kwargs):
+              if not self.otp_code:
+                     self.otp_code=str(random.randint(100000,999999))
+              if not self.valid_till:
+                     datetime.now()+timedelta(minutes=10)
+       def is_valid(self):
+        from django.utils import timezone
+        return not self.is_used and timezone.now() < self.expires_at
+    
+       def __str__(self):
+        return f"OTP for {self.user.username}: {self.otp_code}"
 class  Location(models.Model):
     name=models.CharField(max_length=50)
 
@@ -26,15 +46,15 @@ def __str__(self):
 class Events(models.Model):
       title=models.CharField(max_length=100)
       created_at=models.DateTimeField(auto_now_add=True)
-      event_head_id=models.ForeignKey(User,on_delete=models.PROTECT,related_name='event_head_id')
-      event_cc_id=models.ForeignKey(User,on_delete=models.PROTECT,related_name='event_cc_id')
+      event_head_id=models.ForeignKey(Profile,on_delete=models.PROTECT,related_name='event_head_id')
+      event_cc_id=models.ForeignKey(Profile,on_delete=models.PROTECT,related_name='event_cc_id')
       location=models.ForeignKey(Location,on_delete=models.PROTECT)
 def __str__(self):
         return self.title
 
 
 class Photo(models.Model):
-      uploader_id=models.ForeignKey(User,on_delete=models.PROTECT)
+      uploader_id=models.ForeignKey(Profile,on_delete=models.PROTECT)
       event_id=models.ForeignKey(Events,on_delete=models.PROTECT)
       location_id=models.ForeignKey(Location, on_delete=models.PROTECT)
       watermarked=models.BooleanField(default=False)
@@ -50,25 +70,25 @@ class Photo(models.Model):
 
 class Watermark(models.Model):
        watermark_desc=models.CharField(max_length=100)
-       owner=models.ForeignKey(User,on_delete=models.CASCADE)
+       owner=models.ForeignKey(Profile,on_delete=models.CASCADE)
        photo_id=models.ForeignKey(Photo,on_delete=models.CASCADE)
 def __str__(self):
         return self.watermark_desc
 
 class Reference_photo(models.Model):
        photo_id=models.ForeignKey(Photo,on_delete=models.PROTECT)
-       user_id=models.ForeignKey(User,on_delete=models.CASCADE)
+       user_id=models.ForeignKey(Profile,on_delete=models.CASCADE)
 class Favourite (models.Model):
-       user_id=models.ForeignKey(User,on_delete=models.CASCADE)
+       user_id=models.ForeignKey(Profile,on_delete=models.CASCADE)
        photo_id=models.ForeignKey(Photo,on_delete=models.PROTECT)
  
 class Like(models.Model):
-       liked_by=models.ForeignKey(User,on_delete=models.CASCADE)
+       liked_by=models.ForeignKey(Profile,on_delete=models.CASCADE)
        photo_id=models.ForeignKey(Photo,on_delete=models.PROTECT)
        liked_at=models.DateTimeField(auto_now_add=True)
 
 class Comment(models.Model):
-       commented_by=models.ForeignKey(User,on_delete=models.CASCADE)
+       commented_by=models.ForeignKey(Profile,on_delete=models.CASCADE)
        description=models.TextField(max_length=500)
        photo_id=models.ForeignKey(Photo,on_delete=models.CASCADE)
        commented_at=models.DateTimeField(auto_now_add=True)
@@ -79,14 +99,14 @@ class Notification(models.Model):
        new_comment=models.BooleanField
        new_like=models.BooleanField
        new_tag=models.BooleanField
-       activity_by=models.ForeignKey(User,on_delete=models.CASCADE)
+       activity_by=models.ForeignKey(Profile,on_delete=models.CASCADE)
        photoId=models.ForeignKey(Photo,on_delete=models.CASCADE)
        newEvent=models.BooleanField
        eventId=models.ForeignKey(Events,on_delete=models.CASCADE)
 
 class Tag(models.Model):
-       tagged_by=models.ForeignKey(User,on_delete=models.CASCADE,related_name='tagged_by')
-       tagged_whom=models.ForeignKey(User,on_delete=models.CASCADE,related_name='tagged_whom')
+       tagged_by=models.ForeignKey(Profile,on_delete=models.CASCADE,related_name='tagged_by')
+       tagged_whom=models.ForeignKey(Profile,on_delete=models.CASCADE,related_name='tagged_whom')
        tagged_at=models.DateTimeField(auto_now_add=True)
        photo_id=models.ForeignKey(Photo,on_delete=models.CASCADE)
 class Photo_tag(models.Model):
