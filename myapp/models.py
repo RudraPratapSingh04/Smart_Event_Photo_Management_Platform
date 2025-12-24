@@ -8,7 +8,6 @@ from datetime import datetime,timedelta
 
 class Profile(models.Model):
       user=models.OneToOneField(User,on_delete=models.CASCADE)
-
       Admin_Right=models.BooleanField(default=False)
       oauth_User_Id=models.CharField(max_length=50)
 #       email=models.EmailField()
@@ -18,7 +17,8 @@ class Profile(models.Model):
       dept_info=models.CharField(max_length=50)
       no_of_downloads=models.IntegerField(default=0)
       joined_at=models.DateTimeField(auto_now_add=True)
-def __str__(self):
+ 
+      def __str__(self):    
         return self.user.username
 class OTPVerification(models.Model):
        user=models.ForeignKey(User,on_delete=models.CASCADE)
@@ -41,30 +41,26 @@ class OTPVerification(models.Model):
         return f"OTP for {self.user.username}: {self.otp_code}"
 class  Location(models.Model):
     name=models.CharField(max_length=50)
-
-def __str__(self):
+    def __str__(self):
         return self.name
-class Events(models.Model):
+class Event(models.Model):
       title=models.CharField(max_length=100)
       created_at=models.DateTimeField(auto_now_add=True)
       event_head_id=models.ForeignKey(Profile,on_delete=models.PROTECT,related_name='event_head_id')
       event_cc_id=models.ForeignKey(Profile,on_delete=models.PROTECT,related_name='event_cc_id')
       location=models.ForeignKey(Location,on_delete=models.PROTECT)
-def __str__(self):
+      def __str__(self):
         return self.title
 
 
 class Photo(models.Model):
       uploader_id=models.ForeignKey(Profile,on_delete=models.PROTECT)
-      event_id=models.ForeignKey(Events,on_delete=models.PROTECT)
-      location_id=models.ForeignKey(Location, on_delete=models.PROTECT)
-      watermarked=models.BooleanField(default=False)
-      likes=models.IntegerField(default=0)
-      comments=models.IntegerField(default=0)
-      camera_model=models.CharField(max_length=30)
-      aperture=models.CharField(max_length=30)
-      shutter_speed=models.CharField(max_length=30)
-      gps_Location=models.CharField(max_length=100)
+      event_id=models.ForeignKey(Event,on_delete=models.PROTECT)
+      watermarked=models.BooleanField(default=False)      
+      camera_model=models.CharField(max_length=30,null=True,blank=True)
+      aperture=models.CharField(max_length=30,null=True,blank=True)
+      shutter_speed=models.CharField(max_length=30,null=True,blank=True)
+      gps_Location=models.CharField(max_length=100,null=True,blank=True)
       total_Views=models.IntegerField(default=0)
       downloads=models.IntegerField(default=0)
       uploaded_at=models.DateTimeField(auto_now_add=True)
@@ -73,7 +69,7 @@ class Watermark(models.Model):
        watermark_desc=models.CharField(max_length=100)
        owner=models.ForeignKey(Profile,on_delete=models.CASCADE)
        photo_id=models.ForeignKey(Photo,on_delete=models.CASCADE)
-def __str__(self):
+       def __str__(self):
         return self.watermark_desc
 
 class Reference_photo(models.Model):
@@ -95,15 +91,15 @@ class Comment(models.Model):
        commented_at=models.DateTimeField(auto_now_add=True)
 class Notification(models.Model):
        notification_time=models.DateTimeField(auto_now_add=True)
-       ActivityOnPhoto=models.BooleanField
-       new_post=models.BooleanField
-       new_comment=models.BooleanField
-       new_like=models.BooleanField
-       new_tag=models.BooleanField
+       ActivityOnPhoto=models.BooleanField(default=False)
+       new_post=models.BooleanField(default=False)
+       new_comment=models.BooleanField(default=False)
+       new_like=models.BooleanField(default=False)
+       new_tag=models.BooleanField(default=False)
        activity_by=models.ForeignKey(Profile,on_delete=models.CASCADE)
        photoId=models.ForeignKey(Photo,on_delete=models.CASCADE)
-       newEvent=models.BooleanField
-       eventId=models.ForeignKey(Events,on_delete=models.CASCADE)
+       newEvent=models.BooleanField(default=False)
+       eventId=models.ForeignKey(Event,on_delete=models.CASCADE)
 
 class Tag(models.Model):
        tagged_by=models.ForeignKey(Profile,on_delete=models.CASCADE,related_name='tagged_by')
