@@ -1,5 +1,8 @@
+from datetime import timedelta
+import random
+from django.utils import timezone
 from django.shortcuts import render
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.models import User
@@ -7,68 +10,134 @@ from django.contrib.auth import authenticate, login, logout
 from django.core.mail import send_mail
 from django.conf import settings
 from .models import OTPVerification
+from rest_framework.permissions import IsAuthenticated
+
 # Create your views here.
 @api_view(['POST'])
+def verify_login(request):
+    username=request.data.get("username")
+    password=request.data.get("password")
+    if not username or not password:
+        return Response(
+            {"message":"Username or password missing"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    user=authenticate(username=username,password=password)
+    if user is not None:
+        return Response({
+            "message":"Login successful",
+            "user":{
+                "id":user.id,
+                "username":user.username,
+                "email":user.email
+            }
+        },
+        status=status.HTTP_200_OK)
+    return Response({
+        "message":"Invalid credentials"
+    },status=status.HTTP_401_UNAUTHORIZED)
+
+
+
+@api_view(['POST'])
 def send_otp(request):
+    
+    email= request.data.get('email')
     username=request.data.get('username')
     password=request.data.get('password')
-    if not username or not password:
-        return Response({'error': 'Username and password are required.'}, status=status.HTTP_400_BAD_REQUEST)
     
-    user=authenticate(request,username=username,password=password)
-    if user is not None:
-        otp=OTPVerification.objects.create(user=user)
+    if not username or not password or not email:
+        return Response({'error': 'All fields are required.'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+    
+    if User.objects.filter(email__iexact=email).exists():
+        return Response({'error': 'EmailAlreadyTaken'}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            send_mail(
-                'Your OTP Code',
-                f'Your OTP code is: {otp.otp_code}',
-                settings.DEFAULT_FROM_EMAIL,
-                [user.email],
-                fail_silently=False,
-            )
-            return Response( {
-                'message': 'OTP sent successfully.',
-                'user_id': user.id,
-            }, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({'error': 'Failed to send OTP email.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    else:
-            return Response({'error':' Invalid credentials.'}, status=status.HTTP_401_UNAUTHORIZED  )
+    # Optional: check username uniqueness
+    if User.objects.filter(username__iexact=username).exists():
+        return Response({'error': 'UsernameAlreadyTaken'}, status=status.HTTP_400_BAD_REQUEST)
+    print("SEND OTP API HIT")
+    otp=int(random.randint(100000,999999))
+    OTPVerification.objects.filter(email__iexact=email).delete()
+    print(f"OTP GENERATED {otp}")
+    # OTPVerification.objects.create(
+    #     user=User.objects.create_user(username=username,email=email,password=password),
+    #     otp_code=otp
+    # )
+    OTPVerification.objects.create(
+        email=email,
+        otp_code=otp,
+        valid_till=timezone.now() +timedelta(minutes=5)
+        
+    )
+    print(email)
+    try:
+        print(otp)
+    except Exception as e:
+        print("failed to send otp kuchh karo",{e})
+        return Response({'error': 'Failed to send OTP email.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    return Response({
+        'message':'OTP sent successfully to your email.',
+    },status=status.HTTP_200_OK
+    )
+
+    
+    
+
+
+
     
 @api_view(['POST'])
 def verify_otp(request):
-     user_id=request.data.get('user_id')
-     otp_code=request.data.get('otp_code')
-     if not user_id:
+     email= request.data.get('email')
+     username=request.data.get('username')
+     password = request.data.get('password')
+     otp_code=request.data.get('otp')
+     if not username or not email or not password:
           return Response({'error':'Some internal error occured'},status=status.HTTP_400_BAD_REQUEST)
      if not otp_code:
             return Response({'error':'OTP code is required.'}, status=status.HTTP_400_BAD_REQUEST)
      try:
-          user=User.objects.get(id=user_id)
-          otp=OTPVerification.objects.filter(user=user,otp_code=otp_code,is_used=False).order_by('created_at').first()
-          if not otp:
-            #    print('Error is occuring here')
-               return Response({'error':'Invalid OTP'},status=status.HTTP_400_BAD_REQUEST)
-          if otp.is_valid():
-            otp.is_used=True
-            otp.save()
-            login(request,user)
-            return Response({
-                 'message':'OTP verified successfully',
-                 'user':{
-                      'id':user.id,
-                      'username':user.username,
-                      'email':user.email
-                 }
-            },status=status.HTTP_200_OK)
-          else:
-               return Response({'error':'Invalid/Incorrect OTP '},status=status.HTTP_400_BAD_REQUEST)
-     except User.DoesNotExist:
-        return Response({'error':'User does not exist'},status=status.HTTP_404_NOT_FOUND)
+        otp_obj = OTPVerification.objects.filter(email__iexact=email, otp_code=otp_code, is_used=False).first()
+
+        if not otp_obj:
+            return Response({'error': 'Invalid OTP.'}, status=400)
+
+        if timezone.now() > otp_obj.valid_till:
+            return Response({'error': 'OTP has expired.'}, status=400)
+
+        otp_obj.is_used = True
+        otp_obj.save()
+
+       
+        if User.objects.filter(username__iexact=username).exists():
+            return Response({'error': 'UsernameAlreadyTaken'}, status=400)
+        if User.objects.filter(email__iexact=email).exists():
+            return Response({'error': 'EmailAlreadyTaken'}, status=400)
+
+        user = User.objects.create_user(username=username, email=email, password=password)
+
+        return Response({
+            'message': 'OTP verified successfully. User created.',
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email
+            }
+        }, status=200)
+
      except Exception as e:
-          print(f"Error: {e}")
-          return Response({'error':'Some internal error occured'},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+      return Response({'error': f'Internal server error: {str(e)}'}, status=500) 
+
+  
+# @api_view(['GET'])
+# @permission_classes([IsAuthenticated])
+# def dashboard(request):
+#     return Response({
+#         'message': f'Welcome to your dashboard, {request.user.username}!'
+#     }, status=status.HTTP_200_OK)
+
 @api_view(['POST'])
 def resend_otp(request):
      user_id=request.data.get('user_id')

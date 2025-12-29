@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 import random
 from datetime import datetime,timedelta
+from django.utils import timezone
 
 # Create your models here.
 
@@ -21,24 +22,20 @@ class Profile(models.Model):
       def __str__(self):    
         return self.user.username
 class OTPVerification(models.Model):
-       user=models.ForeignKey(User,on_delete=models.CASCADE)
+       # user=models.ForeignKey(User,on_delete=models.CASCADE)
+       email=models.EmailField(max_length=56)
        otp_code=models.CharField(max_length=6)
        created_at=models.DateTimeField(auto_now_add=True)
        valid_till=models.DateTimeField()
        is_used=models.BooleanField(default=False)
 
-       def save(self,*args,**kwargs):
-              if not self.otp_code:
-                     self.otp_code=str(random.randint(100000,999999))
-              if not self.valid_till:
-                     self.valid_till=datetime.now()+timedelta(minutes=10)
-              super().save(*args,**kwargs)
        def is_valid(self):
-        from django.utils import timezone
         return not self.is_used and timezone.now() < self.valid_till
-    
+
        def __str__(self):
-        return f"OTP for {self.user.username}: {self.otp_code}"
+        return f"OTP for {self.email}: {self.otp_code}"
+    
+
 class  Location(models.Model):
     name=models.CharField(max_length=50)
     def __str__(self):
