@@ -19,8 +19,9 @@ function Welcome() {
         return 
     }
     try{
-        const response=await fetch("http://127.0.0.1:8000/api/verify-login/",{
+        const response=await fetch("http://localhost:8000/api/verify-login/",{
             method:"POST",
+            credentials:"include",
             headers:{
                 "Content-Type":"application/json"
             },
@@ -33,6 +34,9 @@ function Welcome() {
         if(!response.ok){
             throw new Error(data.message||"Login failed")
         }
+        localStorage.setItem("isLoggedIn","true");
+        localStorage.setItem("username",username);
+        
         navigate("/dashboard");
     }catch(err){
         setError(err.message);

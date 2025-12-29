@@ -10,10 +10,11 @@ from django.contrib.auth import authenticate, login, logout
 from django.core.mail import send_mail
 from django.conf import settings
 from .models import OTPVerification
-from rest_framework.permissions import IsAuthenticated
-
+from rest_framework.permissions import IsAuthenticated,AllowAny
+# from django.views.decorators.csrf import csrf_exempt
 # Create your views here.
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def verify_login(request):
     username=request.data.get("username")
     password=request.data.get("password")
@@ -24,7 +25,10 @@ def verify_login(request):
         )
     user=authenticate(username=username,password=password)
     if user is not None:
+        login(request,user)
+        print("Logging in")
         return Response({
+           
             "message":"Login successful",
             "user":{
                 "id":user.id,
@@ -40,6 +44,7 @@ def verify_login(request):
 
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def send_otp(request):
     
     email= request.data.get('email')
@@ -89,6 +94,7 @@ def send_otp(request):
 
     
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def verify_otp(request):
      email= request.data.get('email')
      username=request.data.get('username')
@@ -131,34 +137,44 @@ def verify_otp(request):
       return Response({'error': f'Internal server error: {str(e)}'}, status=500) 
 
   
-# @api_view(['GET'])
-# @permission_classes([IsAuthenticated])
-# def dashboard(request):
-#     return Response({
-#         'message': f'Welcome to your dashboard, {request.user.username}!'
-#     }, status=status.HTTP_200_OK)
-
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def dashboard(request):
+    return Response({
+        'message': f'Welcome to your dashboard, {request.user.username}!'
+    }, status=status.HTTP_200_OK)
+# @csrf_exempt
 @api_view(['POST'])
-def resend_otp(request):
-     user_id=request.data.get('user_id')
-     user=User.objects.get(id=user_id)
-     otp=OTPVerification.objects.create(user=user)
-     try:
-        send_mail(
-            'Your OTP Code',
-             f'Your OTP code is: {otp.otp_code}',
-             settings.DEFAULT_FROM_EMAIL,
-             [user.email],
-             fail_silently=False,
-            )
-        return Response(   {
-                'message': 'OTP re-sent successfully.',
-                'user_id': user.id,
-            }, status=status.HTTP_200_OK)
-     except User.DoesNotExist:
-        return Response({'error':'User does not exist'},status=status.HTTP_404_NOT_FOUND)
-     except Exception as e:
-        return Response({'error': 'Failed to send OTP email.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+@permission_classes([IsAuthenticated])
+def logout_session(request):
+    print("Logout request initiated")
+    logout(request)
+    return Response({"message": "Logged out"})
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def check_auth(request):
+    return Response({"message": "Authenticated", "user_id": request.user.id,"email":request.user.email}, status=200)
+# @api_view(['POST'])
+# def resend_otp(request):
+#      user_id=request.data.get('user_id')
+#      user=User.objects.get(id=user_id)
+#      otp=OTPVerification.objects.create(user=user)
+#      try:
+#         send_mail(
+#             'Your OTP Code',
+#              f'Your OTP code is: {otp.otp_code}',
+#              settings.DEFAULT_FROM_EMAIL,
+#              [user.email],
+#              fail_silently=False,
+#             )
+#         return Response(   {
+#                 'message': 'OTP re-sent successfully.',
+#                 'user_id': user.id,
+#             }, status=status.HTTP_200_OK)
+#      except User.DoesNotExist:
+#         return Response({'error':'User does not exist'},status=status.HTTP_404_NOT_FOUND)
+#      except Exception as e:
+#         return Response({'error': 'Failed to send OTP email.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
                
 

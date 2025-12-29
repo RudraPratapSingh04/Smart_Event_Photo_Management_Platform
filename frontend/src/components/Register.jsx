@@ -21,7 +21,7 @@ function Register() {
     }
     
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/verify-otp/", {
+      const response = await fetch("http://localhost:8000/api/verify-otp/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -39,9 +39,9 @@ function Register() {
       if (!response.ok) {
         throw new Error(data.error || data.message || "Sending OTP failed");
       }
-      localStorage.setItem("isLoggedIn", "true");
-      localStorage.setItem("username", username);
-      Navigate("/dashboard");
+      // localStorage.setItem("isLoggedIn", "true");
+      // localStorage.setItem("username", username);
+      Navigate("/");
     } catch (err) {
       setErrorOTP(err.message);
     }
@@ -54,7 +54,7 @@ function Register() {
       return
     }
     try{
-      const response=await fetch("http://127.0.0.1:8000/api/send-otp/",{
+      const response=await fetch("http://localhost:8000/api/send-otp/",{
     method:"POST",
             headers:{
                 "Content-Type":"application/json"

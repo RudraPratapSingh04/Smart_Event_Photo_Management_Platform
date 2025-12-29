@@ -1,13 +1,103 @@
-import React from 'react'
-import Header from './subcomponent/Header.jsx'
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import Header from "./subcomponent/Header";
 function Dashboard() {
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch(
+          "http://localhost:8000/api/check_auth/",
+          {
+            method: "GET",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (!response.ok) {
+          if (response.status === 401 || response.status === 403) {
+            navigate("/", { replace: true });
+            return;
+          }
+          throw new Error(`Auth check failed: ${response.status}`);
+        }
+
+        const userData = await response.json();
+        setUser(userData);
+      } catch (err) {
+        setError(err.message);
+        navigate("/", { replace: true });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, [navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-lg">Loading Dashboard...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-red-500 text-center">
+          Error: {error}. Redirecting...
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
-    <Header />
-    <div>Dashboard</div>
+      <Header />
+      <div className="min-h-screen bg-gray-100 p-8">
+        <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6">
+          <h1 className="text-3xl font-bold mb-4">
+            Welcome to Dashboard, {user?.username}!
+          </h1>
+          <p className="text-gray-600 mb-4">Email: {user?.email}</p>
+          <p className="text-gray-600 mb-6">Bio: {user?.bio || "No bio set"}</p>
+
+          {/* Add your dashboard features here, e.g., fetch events */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Example: Load events */}
+            <button
+              onClick={async () => {
+                // Fetch protected events
+                const res = await fetch(
+                  "http://127.0.0.1:8000/api/view_events/",
+                  {
+                    method: "GET",
+                    credentials: "include",
+                  }
+                );
+                if (res.ok) {
+                  const events = await res.json();
+                  console.log("Events:", events);
+                }
+              }}
+              className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+            >
+              Load Events
+            </button>
+          </div>
+        </div>
+      </div>
     </>
-   
-  )
+  );
 }
 
-export default Dashboard
+export default Dashboard;
