@@ -1,13 +1,12 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
-import { useState, useEffect } from "react";
-// import React from "react";
 import { Navigate } from "react-router-dom";
 import Welcome from "./components/Welcome.jsx";
 import Register from "./components/Register.jsx";
 import Dashboard from "./components/Dashboard.jsx";
-// import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import Profile from "./components/Profile.jsx";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import {
   createBrowserRouter,
   Route,
@@ -38,10 +37,22 @@ const router = createBrowserRouter(
     <>
       <Route path="/" element={<Welcome />} />
       <Route path="/register" element={<Register />} />
-      {/* <Route path="/dashboard" element={<Dashboard />} />
-      
-      */}
-      <Route path="/dashboard" element={<Dashboard />} />
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        }
+      />
     </>
   )
 );

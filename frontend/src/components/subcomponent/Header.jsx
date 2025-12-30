@@ -1,7 +1,8 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link,useNavigate } from "react-router-dom";
 
 function Header() {
+  const Navigate = useNavigate();
   const clearClientAuthState = () => {
     localStorage.removeItem("isLoggedIn");
     localStorage.removeItem("username");
@@ -26,7 +27,8 @@ function Header() {
       console.error("Logout failed:", err);
     } finally {
       clearClientAuthState();
-      window.location.href = "http://localhost:5173/";
+      // window.location.href = "http://localhost:5173/";
+      Navigate("/");
     }
   };
   function getCSRFToken() {
@@ -34,6 +36,10 @@ function Header() {
       .split("; ")
       .find((row) => row.startsWith("csrftoken="))
       ?.split("=")[1];
+  }
+
+  const viewProfile=()=>{
+    Navigate("/profile");
   }
 
   return (
@@ -45,7 +51,8 @@ function Header() {
             PhotoGo
           </Link>
           <div>
-            <button className="text-white text-xl bg-red-400 p-2 rounded-xl gap-2">
+            <button className="text-white text-xl bg-red-400 p-2 rounded-xl gap-2"
+            onClick={viewProfile}>
               View Profile
             </button>
             <button

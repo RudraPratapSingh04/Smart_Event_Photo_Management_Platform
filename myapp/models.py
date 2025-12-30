@@ -10,9 +10,9 @@ from django.utils import timezone
 class Profile(models.Model):
       user=models.OneToOneField(User,on_delete=models.CASCADE)
       Admin_Right=models.BooleanField(default=False)
-      oauth_User_Id=models.CharField(max_length=50)
+      oauth_User_Id=models.CharField(max_length=50,null=True,blank=True)
 #       email=models.EmailField()
-      profile_picture = models.ImageField(upload_to='profile_pics/')
+      profile_picture = models.ImageField(upload_to='profile_pics/',null=True,blank=True)
       bio=models.TextField(max_length=300)
       batch=models.CharField(max_length=10)
       dept_info=models.CharField(max_length=50)

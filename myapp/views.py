@@ -13,6 +13,7 @@ from .models import OTPVerification,Event
 from rest_framework.permissions import IsAuthenticated,AllowAny
 from django.views.decorators.csrf import csrf_exempt
 from .serializer import EventSerializer
+from .models import Profile
 # from django.views.decorators.csrf import csrf_exempt
 # Create your views here.
 @api_view(['POST'])
@@ -145,10 +146,9 @@ def dashboard(request):
     return Response({
         'message': f'Welcome to your dashboard, {request.user.username}!'
     }, status=status.HTTP_200_OK)
-# @csrf_exempt
 
 
-# @csrf_exempt
+
 @api_view(['POST', 'OPTIONS'])
 @permission_classes([AllowAny])
 def logout_session(request):
@@ -198,3 +198,60 @@ def create_event(request):
         member_only=member_only
     )
     return Response({"message":"Event created","event_id":event.id},status=201)
+
+# @api_view(['GET'])
+# def view_profile(request):
+#     print("View profile API hit")
+#     user=request.user
+#     profile=Profile.objects.get(profile__user__username=user.username)
+#     print(profile.bio)
+#     # profile=user.profile
+#     print(user.username)
+#     print(user.email)
+    
+#     # profile_data={
+#     #     "username":user.username,
+#     #     "email":user.email,
+#     #     "bio":profile.bio,
+#     #     "batch":profile.batch,
+#     #     "dept_info":profile.dept_info,
+#     #     "no_of_downloads":profile.no_of_downloads,
+#     #     "joined_at":profile.joined_at,
+#     #     "profile_picture":request.build_absolute_uri(profile.profile_picture.url) if profile.profile_picture else None
+#     # }
+#     return Response("Done",status=200)
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
+from .models import Profile
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def view_profile(request):
+    print("View profile API hit")
+
+    user = request.user
+
+    try:
+        profile = Profile.objects.get(user=user)
+    except Profile.DoesNotExist:
+        return Response(
+            {"error": "Profile not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    data = {
+        "username": user.username,
+        "email": user.email,
+        "bio": profile.bio,
+        "batch": profile.batch,
+        "department": profile.dept_info,
+        "admin_right": profile.Admin_Right,
+        "no_of_downloads": profile.no_of_downloads,
+        "joined_at": profile.joined_at,
+        "profile_picture": profile.profile_picture.url if profile.profile_picture else None
+    }
+
+    return Response(data, status=status.HTTP_200_OK)
