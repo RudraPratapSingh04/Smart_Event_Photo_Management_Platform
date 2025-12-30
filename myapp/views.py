@@ -148,9 +148,13 @@ def dashboard(request):
 # @csrf_exempt
 
 
-@csrf_exempt
-@api_view(['POST'])
+# @csrf_exempt
+@api_view(['POST', 'OPTIONS'])
+@permission_classes([AllowAny])
 def logout_session(request):
+    # Allow CORS preflight without auth/CSRF checks
+    # if request.method == 'OPTIONS':
+    #     return Response(status=status.HTTP_200_OK)
     print("Logout request initiated")
     logout(request)
     return Response({"message": "Logged out"})
