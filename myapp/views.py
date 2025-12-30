@@ -9,9 +9,10 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import OTPVerification
+from .models import OTPVerification,Event
 from rest_framework.permissions import IsAuthenticated,AllowAny
 from django.views.decorators.csrf import csrf_exempt
+from .serializer import EventSerializer
 # from django.views.decorators.csrf import csrf_exempt
 # Create your views here.
 @api_view(['POST'])
@@ -160,3 +161,36 @@ def logout_session(request):
 def check_auth(request):
     return Response({"message": "Authenticated", "user_id": request.user.id,"email":request.user.email}, status=200)
 
+@api_view(['GET'])
+def view_events(request):
+    user=request.user
+    is_guest=user.groups.filter(name="Guests").exists()
+    if is_guest:
+        events=events.filter(member_only=True)
+    serializer=EventSerializer(events,many=True)
+    return Response(serializer.data,status=200)
+
+@api_view(['POST'])
+def create_event(request):
+    if not request.user.has_perm('myapp.add_event'):
+        return Response({"message":"Permission denied"},status=403)
+    title=request.data.get("title")
+    event_head_username=request.data.get("event_head")
+    event_cc_username=request.data.get("event_cc")
+    member_only=request.data.get("member_only",False)
+    if not title or not event_head_username or not event_cc_username:
+        return Response({"message":"Missing fields"},status=400)
+    event_head=User.objects.get(username=event_head_username)
+    try:
+        
+        event_cc=User.objects.get(username=event_cc_username)
+    except User.DoesNotExist:
+        event_cc=event_head
+    
+    event=Event.objects.create(
+        title=title,
+        event_head_id=event_head.id,
+        event_cc_id=event_cc.id,
+        member_only=member_only
+    )
+    return Response({"message":"Event created","event_id":event.id},status=201)
