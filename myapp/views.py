@@ -11,6 +11,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from .models import OTPVerification
 from rest_framework.permissions import IsAuthenticated,AllowAny
+from django.views.decorators.csrf import csrf_exempt
 # from django.views.decorators.csrf import csrf_exempt
 # Create your views here.
 @api_view(['POST'])
@@ -144,38 +145,18 @@ def dashboard(request):
         'message': f'Welcome to your dashboard, {request.user.username}!'
     }, status=status.HTTP_200_OK)
 # @csrf_exempt
+
+
+@csrf_exempt
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
 def logout_session(request):
     print("Logout request initiated")
     logout(request)
     return Response({"message": "Logged out"})
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def check_auth(request):
     return Response({"message": "Authenticated", "user_id": request.user.id,"email":request.user.email}, status=200)
-# @api_view(['POST'])
-# def resend_otp(request):
-#      user_id=request.data.get('user_id')
-#      user=User.objects.get(id=user_id)
-#      otp=OTPVerification.objects.create(user=user)
-#      try:
-#         send_mail(
-#             'Your OTP Code',
-#              f'Your OTP code is: {otp.otp_code}',
-#              settings.DEFAULT_FROM_EMAIL,
-#              [user.email],
-#              fail_silently=False,
-#             )
-#         return Response(   {
-#                 'message': 'OTP re-sent successfully.',
-#                 'user_id': user.id,
-#             }, status=status.HTTP_200_OK)
-#      except User.DoesNotExist:
-#         return Response({'error':'User does not exist'},status=status.HTTP_404_NOT_FOUND)
-#      except Exception as e:
-#         return Response({'error': 'Failed to send OTP email.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-               
-
 

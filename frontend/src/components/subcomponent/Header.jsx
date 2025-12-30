@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 function Header() {
   const logout=async()=>{
     try{
+      console.log("logout rewuested");
       const response=await fetch("http://localhost:8000/api/logout_session/",{
         method:"POST",
         credentials:"include",
