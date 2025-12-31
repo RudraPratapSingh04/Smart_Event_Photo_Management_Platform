@@ -165,7 +165,7 @@ def check_auth(request):
 def view_events(request):
     user=request.user
     is_guest=user.groups.filter(name="Guest").exists()
-    events=Event.objects.all().order_by('-created_at')
+    events=Event.objects.all().order_by('-event_date')
     if is_guest:
         events=events.filter(member_only=False)
     serializer=EventSerializer(events,many=True)
@@ -195,7 +195,11 @@ def create_event(request):
         member_only=member_only
     )
 
-
+@api_view(['GET'])
+def check_guest(request):
+    user=request.user
+    is_guest=user.groups.filter(name="Guest").exists()
+    return Response({"is_guest":is_guest},status=200)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def view_profile(request):
@@ -224,3 +228,25 @@ def view_profile(request):
     }
 
     return Response(data, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+def addnew_event(request):
+    print("Api hit")
+    user=request.user
+    profile = request.user.profile
+    title = request.data.get('title')
+    event_date = request.data.get('event_date')
+    member_only = request.data.get('member_only', False)
+    is_guest=user.groups.filter(name="Guest").exists()
+    if(is_guest):
+        return Response({'error': 'Guests are not allowed to add events.'}, status=status.HTTP_403_FORBIDDEN)
+    try:
+        Event.objects.create(
+            title=title,
+            event_date=event_date,
+            event_head=profile,
+            member_only=member_only
+        )
+        return Response({'message': 'Event created successfully.'}, status=status.HTTP_201_CREATED)
+    except Exception as e:
+        return Response({'error': f'Failed to create event: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

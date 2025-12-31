@@ -6,7 +6,6 @@ from django.utils import timezone
 
 # Create your models here.
 
-
 class Profile(models.Model):
       user=models.OneToOneField(User,on_delete=models.CASCADE)
       Admin_Right=models.BooleanField(default=False)
@@ -42,9 +41,9 @@ class  Location(models.Model):
         return self.name
 class Event(models.Model):
       title=models.CharField(max_length=100)
-      created_at=models.DateTimeField(auto_now_add=True)
-      event_head_id=models.ForeignKey(Profile,on_delete=models.PROTECT,related_name='event_head_id')
-      event_cc_id=models.ForeignKey(Profile,on_delete=models.PROTECT,related_name='event_cc_id',null=True,blank=True)
+      event_date=models.DateTimeField(default=timezone.now)
+      event_head=models.ForeignKey(Profile,on_delete=models.PROTECT,related_name='event_head_id')
+      event_cc=models.ForeignKey(Profile,on_delete=models.PROTECT,related_name='event_cc_id',null=True,blank=True)
       member_only=models.BooleanField(default=False)
       def __str__(self):
         return self.title

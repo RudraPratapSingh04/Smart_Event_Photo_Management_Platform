@@ -9,5 +9,7 @@ urlpatterns = [
     path('api/dashboard/',views.dashboard,name='dashboard'),
     path('api/check_auth/',views.check_auth,name='check_auth'),
     path('api/view_profile/',views.view_profile,name='view_profile'),
-    path('api/view_events/',views.view_events,name='view_events')
+    path('api/view_events/',views.view_events,name='view_events'),
+    path('api/check_guest/',views.check_guest,name='check_guest'),
+    path('api/addnew_event/',views.addnew_event,name='addnew_event'),   
 ]

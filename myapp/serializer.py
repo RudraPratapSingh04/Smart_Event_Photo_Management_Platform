@@ -4,11 +4,11 @@ from .models import Event
 
 class EventSerializer(serializers.ModelSerializer):
     event_head_username = serializers.CharField(
-        source='event_head_id.user.username',
+        source='event_head.user.username',
         read_only=True
     )
     event_cc_username = serializers.CharField(
-        source='event_cc_id.user.username',
+        source='event_cc.user.username',
         read_only=True
     )
 
@@ -17,7 +17,7 @@ class EventSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'title',
-            'created_at',
+            'event_date',
             'event_head_username',
             'event_cc_username',
             'member_only',
