@@ -1,11 +1,10 @@
 // import React from 'react'
 import Header from './subcomponent/Header.jsx'
 import Footer from './subcomponent/Footer.jsx'
-import React,{useEffect,useState} from 'react'
+import React, { useEffect, useState } from "react";
 
 function Profile() {
   const [profileData, setProfileData] = useState(null);
-  // const [showProfile, setShowProfile] = useState(false);
 useEffect(() => {
 const loadProfile=async()=>{
   try{
@@ -18,7 +17,6 @@ const loadProfile=async()=>{
  });
  const data=await response.json();
  setProfileData(data);
-//  setShowProfile(true);
  console.log(data)
 }catch(error){
   console.error("Error fetching profile data:", error);

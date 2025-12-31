@@ -6,6 +6,7 @@ import Welcome from "./components/Welcome.jsx";
 import Register from "./components/Register.jsx";
 import Dashboard from "./components/Dashboard.jsx";
 import Profile from "./components/Profile.jsx";
+import Events from "./components/Events.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import {
   createBrowserRouter,
@@ -53,9 +54,19 @@ const router = createBrowserRouter(
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/events"
+        element={
+          <ProtectedRoute>
+            <Events />
+          </ProtectedRoute>
+        }
+      />
     </>
   )
 );
+export default router;
+
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <RouterProvider router={router} />

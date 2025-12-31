@@ -14,6 +14,12 @@ from rest_framework.permissions import IsAuthenticated,AllowAny
 from django.views.decorators.csrf import csrf_exempt
 from .serializer import EventSerializer
 from .models import Profile
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
+from .models import Profile
+
 # from django.views.decorators.csrf import csrf_exempt
 # Create your views here.
 @api_view(['POST'])
@@ -89,13 +95,6 @@ def send_otp(request):
         'message':'OTP sent successfully to your email.',
     },status=status.HTTP_200_OK
     )
-
-    
-    
-
-
-
-    
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def verify_otp(request):
@@ -152,9 +151,6 @@ def dashboard(request):
 @api_view(['POST', 'OPTIONS'])
 @permission_classes([AllowAny])
 def logout_session(request):
-    # Allow CORS preflight without auth/CSRF checks
-    # if request.method == 'OPTIONS':
-    #     return Response(status=status.HTTP_200_OK)
     print("Logout request initiated")
     logout(request)
     return Response({"message": "Logged out"})
@@ -168,9 +164,10 @@ def check_auth(request):
 @api_view(['GET'])
 def view_events(request):
     user=request.user
-    is_guest=user.groups.filter(name="Guests").exists()
+    is_guest=user.groups.filter(name="Guest").exists()
+    events=Event.objects.all().order_by('-created_at')
     if is_guest:
-        events=events.filter(member_only=True)
+        events=events.filter(member_only=False)
     serializer=EventSerializer(events,many=True)
     return Response(serializer.data,status=200)
 
@@ -197,35 +194,7 @@ def create_event(request):
         event_cc_id=event_cc.id,
         member_only=member_only
     )
-    return Response({"message":"Event created","event_id":event.id},status=201)
 
-# @api_view(['GET'])
-# def view_profile(request):
-#     print("View profile API hit")
-#     user=request.user
-#     profile=Profile.objects.get(profile__user__username=user.username)
-#     print(profile.bio)
-#     # profile=user.profile
-#     print(user.username)
-#     print(user.email)
-    
-#     # profile_data={
-#     #     "username":user.username,
-#     #     "email":user.email,
-#     #     "bio":profile.bio,
-#     #     "batch":profile.batch,
-#     #     "dept_info":profile.dept_info,
-#     #     "no_of_downloads":profile.no_of_downloads,
-#     #     "joined_at":profile.joined_at,
-#     #     "profile_picture":request.build_absolute_uri(profile.profile_picture.url) if profile.profile_picture else None
-#     # }
-#     return Response("Done",status=200)
-
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework import status
-from .models import Profile
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
