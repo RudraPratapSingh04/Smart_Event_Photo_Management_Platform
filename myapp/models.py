@@ -52,6 +52,7 @@ class Event(models.Model):
 class Photo(models.Model):
       uploader_id=models.ForeignKey(Profile,on_delete=models.PROTECT)
       event_id=models.ForeignKey(Event,on_delete=models.PROTECT)
+      image=models.ImageField(upload_to='photos/')
       watermarked=models.BooleanField(default=False)      
       camera_model=models.CharField(max_length=30,null=True,blank=True)
       aperture=models.CharField(max_length=30,null=True,blank=True)
