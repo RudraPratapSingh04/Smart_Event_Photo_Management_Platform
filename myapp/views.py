@@ -201,6 +201,11 @@ def check_guest(request):
     is_guest=user.groups.filter(name="Guest").exists()
     return Response({"is_guest":is_guest},status=200)
 @api_view(['GET'])
+def check_photographer(request):
+    user=request.user
+    is_photographer=user.groups.filter(name="Photographer").exists()
+    return Response({"is_photographer":is_photographer},status=200)
+@api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def view_profile(request):
     print("View profile API hit")
@@ -260,4 +265,23 @@ def event_photos(request,event_slug):
     return Response(serializer.data,status=200)
 
         
+    
+@api_view(['POST'])
+def upload_photos(request):
+    photos = request.FILES.getlist("photos")
+
+    print('hello',photos)
+    event_slug=request.data.get("event_slug")
+    print("EVENT SLUG RECEIVED:", event_slug)
+    if not photos:
+        return Response({'error':"Some error occured"},status=400)
+    
+    for photo in photos:
+        Photo.objects.create(
+            uploader_id=request.user.profile,
+            event=Event.objects.get(slug=event_slug),
+            image=photo,
+        )
+    return Response({'message':'Photos uploaded successfully'},status=200)
+
     

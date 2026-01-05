@@ -13,4 +13,6 @@ urlpatterns = [
     path('api/check_guest/',views.check_guest,name='check_guest'),
     path('api/addnew_event/',views.addnew_event,name='addnew_event'),  
     path('api/event_photos/<str:event_slug>/',views.event_photos,name='event_photos'), 
+    path('api/check_photographer/',views.check_photographer,name='check_photographer'),
+    path('api/upload_photos/',views.upload_photos,name='upload_photos'),
 ]
