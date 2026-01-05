@@ -1,9 +1,10 @@
 import Header from './subcomponent/Header.jsx'
 import Footer from './subcomponent/Footer.jsx'
 import React, { useEffect, useState } from "react";
+import { useNavigate } from 'react-router-dom';
 import { render } from 'react-dom';
 function Events() {
-
+  const navigate = useNavigate();
   const [EventsData, setEventsData] = useState(null);
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -13,6 +14,9 @@ function Events() {
     event_date: '',
     member_only: false,
   });
+  const view_event_photos=(event_slug)=>{
+    navigate(`/event_photos/${event_slug}`);
+  }
   const check_Guest=async()=>{
     try{
       const response = await fetch("http://localhost:8000/api/check_guest/", {
@@ -85,11 +89,14 @@ const AddEvent = async (e) => {
 
 
   const displayEventsData=EventsData && EventsData.map((event)=>(
-    <div key={event.id} className="border p-4 mb-4 w-full">
+    <div key={event.id} className="border p-4 mb-4 w-full flex flex-col gap-2 rounded-lg shadow-md">
       <h2 className="text-xl font-bold mb-2">{event.title}</h2>
       <p>Coordinator : {event.event_head_username}</p>
       <p>Date : {event.event_date.slice(0, 10)}</p>
       <p>Event Type : {event.member_only ? "Members Only" : "Public"}</p>
+      <button 
+      onClick={()=>view_event_photos(event.slug)}
+      className="bg-blue-600 p-2 text-white justify-center align-middle">View</button>
     </div>
   ));
 useEffect(() => {

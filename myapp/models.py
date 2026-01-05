@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 import random
 from datetime import datetime,timedelta
 from django.utils import timezone
+from django.utils.text import slugify
 
 # Create your models here.
 
@@ -41,17 +42,28 @@ class  Location(models.Model):
         return self.name
 class Event(models.Model):
       title=models.CharField(max_length=100)
+      slug=models.SlugField(unique=True,null=True)
       event_date=models.DateTimeField(default=timezone.now)
       event_head=models.ForeignKey(Profile,on_delete=models.PROTECT,related_name='event_head_id')
       event_cc=models.ForeignKey(Profile,on_delete=models.PROTECT,related_name='event_cc_id',null=True,blank=True)
       member_only=models.BooleanField(default=False)
       def __str__(self):
         return self.title
+      def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.title)
+            slug = base_slug
+            count = 1
+            while Event.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{count}"
+                count += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
 
 
 class Photo(models.Model):
       uploader_id=models.ForeignKey(Profile,on_delete=models.PROTECT)
-      event_id=models.ForeignKey(Event,on_delete=models.PROTECT)
+      event=models.ForeignKey(Event,on_delete=models.PROTECT)
       image=models.ImageField(upload_to='photos/')
       watermarked=models.BooleanField(default=False)      
       camera_model=models.CharField(max_length=30,null=True,blank=True)

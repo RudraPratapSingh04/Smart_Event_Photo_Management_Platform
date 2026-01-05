@@ -8,6 +8,7 @@ import Dashboard from "./components/Dashboard.jsx";
 import Profile from "./components/Profile.jsx";
 import Events from "./components/Events.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import Event_Photos from "./components/Event_Photos.jsx";
 import {
   createBrowserRouter,
   Route,
@@ -62,6 +63,14 @@ const router = createBrowserRouter(
           </ProtectedRoute>
         }
       />
+      <Route
+      path="event_photos/:event_slug"
+      element={<
+        ProtectedRoute>
+          <Event_Photos />
+        </ProtectedRoute>
+      }
+      ></Route>
     </>
   )
 );

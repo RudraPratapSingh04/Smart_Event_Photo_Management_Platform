@@ -12,13 +12,13 @@ from django.conf import settings
 from .models import OTPVerification,Event
 from rest_framework.permissions import IsAuthenticated,AllowAny
 from django.views.decorators.csrf import csrf_exempt
-from .serializer import EventSerializer
+from .serializer import EventSerializer,EventPhotoSerializer
 from .models import Profile
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Profile
+from .models import Profile,Photo,Event
 
 # from django.views.decorators.csrf import csrf_exempt
 # Create your views here.
@@ -68,7 +68,7 @@ def send_otp(request):
     if User.objects.filter(email__iexact=email).exists():
         return Response({'error': 'EmailAlreadyTaken'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Optional: check username uniqueness
+
     if User.objects.filter(username__iexact=username).exists():
         return Response({'error': 'UsernameAlreadyTaken'}, status=status.HTTP_400_BAD_REQUEST)
     print("SEND OTP API HIT")
@@ -250,3 +250,14 @@ def addnew_event(request):
         return Response({'message': 'Event created successfully.'}, status=status.HTTP_201_CREATED)
     except Exception as e:
         return Response({'error': f'Failed to create event: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+@api_view(['GET'])
+def event_photos(request,event_slug):
+    event=Event.objects.get(slug=event_slug)
+    photos=Photo.objects.all().order_by('-uploaded_at')
+    photos=photos.filter(event_id=event.id)
+    serializer=EventPhotoSerializer(photos,many=True)
+    return Response(serializer.data,status=200)
+
+        
+    
