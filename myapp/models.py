@@ -92,21 +92,22 @@ class Watermark(models.Model):
         return self.watermark_desc
 
 class Reference_photo(models.Model):
-       photo_id=models.ForeignKey(Photo,on_delete=models.PROTECT)
-       user_id=models.ForeignKey(Profile,on_delete=models.CASCADE)
+       photo=models.ForeignKey(Photo,on_delete=models.PROTECT)
+       user=models.ForeignKey(Profile,on_delete=models.CASCADE)
 class Favourite (models.Model):
-       user_id=models.ForeignKey(Profile,on_delete=models.CASCADE)
-       photo_id=models.ForeignKey(Photo,on_delete=models.PROTECT)
+       user=models.ForeignKey(Profile,on_delete=models.CASCADE)
+       photo=models.ForeignKey(Photo,on_delete=models.PROTECT)
  
 class Like(models.Model):
        liked_by=models.ForeignKey(Profile,on_delete=models.CASCADE)
-       photo_id=models.ForeignKey(Photo,on_delete=models.PROTECT)
+       photo=models.ForeignKey(Photo,on_delete=models.PROTECT)
        liked_at=models.DateTimeField(auto_now_add=True)
-
+       class Meta:
+        unique_together = ('liked_by', 'photo')
 class Comment(models.Model):
        commented_by=models.ForeignKey(Profile,on_delete=models.CASCADE)
        description=models.TextField(max_length=500)
-       photo_id=models.ForeignKey(Photo,on_delete=models.CASCADE)
+       photo=models.ForeignKey(Photo,on_delete=models.CASCADE)
        commented_at=models.DateTimeField(auto_now_add=True)
 class Notification(models.Model):
        notification_time=models.DateTimeField(auto_now_add=True)

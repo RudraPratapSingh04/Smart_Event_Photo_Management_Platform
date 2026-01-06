@@ -2,7 +2,6 @@ from django.urls import path,include
 from . import views
 
 urlpatterns = [
-    path("api/", include("myapp.urls")),
     path('api/send-otp/', views.send_otp, name='send_otp'),
     path('api/verify-otp/', views.verify_otp, name='verify_otp'),
     path('api/verify-login/',views.verify_login,name='verify-login'),
@@ -16,4 +15,7 @@ urlpatterns = [
     path('api/event_photos/<str:event_slug>/',views.event_photos,name='event_photos'), 
     path('api/check_photographer/',views.check_photographer,name='check_photographer'),
     path('api/upload_photos/',views.upload_photos,name='upload_photos'),
+    path('api/photo_properties/',views.photo_properties,name='photo_properties'),
+    path('api/toggle_like/',views.toggle_like,name='toggle_like'),
+    path('api/toggle_favourite/',views.toggle_favourite,name='toggle_favourite'),
 ]

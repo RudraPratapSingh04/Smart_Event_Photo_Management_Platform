@@ -20,7 +20,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Profile,Photo,Event
+from .models import Profile,Photo,Event,Like,Comment,Favourite
 
 # from django.views.decorators.csrf import csrf_exempt
 # Create your views here.
@@ -292,4 +292,66 @@ def upload_photos(request):
         status=202
     )
 
+@api_view(['POST'])
+def photo_properties(request):
     
+    photo_id=request.data.get("photo_id")
+    photo=Photo.objects.get(id=photo_id)
+    likes_count=Like.objects.filter(photo=photo).count()
+    comments_count=Comment.objects.filter(photo=photo).count()
+    profile=request.user.profile
+    photo.total_Views+=1
+    photo.save()
+    is_liked=False
+    isFavourite=False
+    if Favourite.objects.filter(user=profile, photo=photo).exists():
+        isFavourite=True
+    if Like.objects.filter(liked_by=profile, photo=photo).exists():
+        is_liked=True
+    print(is_liked)
+    data={
+        "camera_model":photo.camera_model,
+        "aperture":photo.aperture,
+        "shutter_speed":photo.shutter_speed,
+        "gps_Location":photo.gps_Location,
+        "comments_count":comments_count,
+        "likes_count":likes_count,
+        "total_Views":photo.total_Views,
+        "downloads":photo.downloads,
+        "is_Liked":is_liked,
+        "isFavourite":isFavourite,
+        "uploaded_at":photo.uploaded_at,
+        
+    }
+    return Response(data,status=200)
+@api_view(['POST'])
+def toggle_like(request):
+    photo_id=request.data.get("photo_id")
+    profile=request.user.profile
+    photo=Photo.objects.get(id=photo_id)
+    like_obj=Like.objects.filter(liked_by=profile, photo=photo).first()
+    if like_obj:
+        like_obj.delete()
+        return Response({"message":"Photo unliked"},status=200)
+    else:
+        Like.objects.create(
+            liked_by=profile,
+            photo=photo
+        )
+        return Response({"message":"Photo liked"},status=200)
+    
+@api_view(['POST'])
+def toggle_favourite(request):
+    photo_id=request.data.get("photo_id")
+    profile=request.user.profile
+    photo=Photo.objects.get(id=photo_id)
+    add_to_fav_obj=Favourite.objects.filter(user=profile, photo=photo).first()
+    if add_to_fav_obj:
+        add_to_fav_obj.delete()
+        return Response({"message":"Photo removed from favourites"},status=200)
+    else:
+        Favourite.objects.create(
+            user=profile,
+            photo=photo
+        )
+        return Response({"message":"Photo added to favourites"},status=200)
