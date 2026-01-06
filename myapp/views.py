@@ -9,6 +9,8 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from django.core.mail import send_mail
 from django.conf import settings
+
+from myapp.tasks import process_photo
 from .models import OTPVerification,Event
 from rest_framework.permissions import IsAuthenticated,AllowAny
 from django.views.decorators.csrf import csrf_exempt
@@ -269,19 +271,25 @@ def event_photos(request,event_slug):
 @api_view(['POST'])
 def upload_photos(request):
     photos = request.FILES.getlist("photos")
-
-    print('hello',photos)
     event_slug=request.data.get("event_slug")
-    print("EVENT SLUG RECEIVED:", event_slug)
     if not photos:
         return Response({'error':"Some error occured"},status=400)
-    
+    created_ids=[]
     for photo in photos:
         Photo.objects.create(
             uploader_id=request.user.profile,
             event=Event.objects.get(slug=event_slug),
             image=photo,
+            status="processing"
         )
-    return Response({'message':'Photos uploaded successfully'},status=200)
+        process_photo.delay(photo.id)
+        created_ids.append(photo.id)
+    return Response(
+        {
+            "message": "Upload started",
+            "photo_ids": created_ids
+        },
+        status=202
+    )
 
     

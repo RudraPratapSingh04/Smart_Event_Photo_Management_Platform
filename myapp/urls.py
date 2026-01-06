@@ -1,7 +1,8 @@
-from django.urls import path
+from django.urls import path,include
 from . import views
 
 urlpatterns = [
+    path("api/", include("myapp.urls")),
     path('api/send-otp/', views.send_otp, name='send_otp'),
     path('api/verify-otp/', views.verify_otp, name='verify_otp'),
     path('api/verify-login/',views.verify_login,name='verify-login'),

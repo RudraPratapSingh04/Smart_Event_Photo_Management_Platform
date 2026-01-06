@@ -64,7 +64,17 @@ class Event(models.Model):
 class Photo(models.Model):
       uploader_id=models.ForeignKey(Profile,on_delete=models.PROTECT)
       event=models.ForeignKey(Event,on_delete=models.PROTECT)
-      image=models.ImageField(upload_to='photos/')
+      image=models.ImageField(upload_to='photos/originals')
+      thumbnail=models.ImageField(upload_to='photos/thumbnails/',null=True,blank=True)
+      status=models.CharField(
+          max_length=20,
+          choices=[
+              ("processing","processing"),
+              ("done","done"),
+              ("failed","failed")
+          ],
+          default="processing"
+      )
       watermarked=models.BooleanField(default=False)      
       camera_model=models.CharField(max_length=30,null=True,blank=True)
       aperture=models.CharField(max_length=30,null=True,blank=True)
@@ -77,7 +87,7 @@ class Photo(models.Model):
 class Watermark(models.Model):
        watermark_desc=models.CharField(max_length=100)
        owner=models.ForeignKey(Profile,on_delete=models.CASCADE)
-       photo_id=models.ForeignKey(Photo,on_delete=models.CASCADE)
+       photo=models.ForeignKey(Photo,on_delete=models.CASCADE)
        def __str__(self):
         return self.watermark_desc
 
