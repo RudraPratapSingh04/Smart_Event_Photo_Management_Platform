@@ -210,8 +210,6 @@ def check_photographer(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def view_profile(request):
-    print("View profile API hit")
-
     user = request.user
 
     try:
@@ -274,22 +272,20 @@ def upload_photos(request):
     event_slug=request.data.get("event_slug")
     if not photos:
         return Response({'error':"Some error occured"},status=400)
-    created_ids=[]
     for photo in photos:
         Photo.objects.create(
             uploader_id=request.user.profile,
             event=Event.objects.get(slug=event_slug),
             image=photo,
-            status="processing"
+            status="uploaded"
         )
-        process_photo.delay(photo.id)
-        created_ids.append(photo.id)
+        
     return Response(
         {
-            "message": "Upload started",
-            "photo_ids": created_ids
+            "message": "Uploaded",
+            
         },
-        status=202
+        status=201
     )
 
 @api_view(['POST'])
@@ -355,3 +351,33 @@ def toggle_favourite(request):
             photo=photo
         )
         return Response({"message":"Photo added to favourites"},status=200)
+@api_view(['GET'])
+def favourite_photos(request):
+    profile=request.user.profile
+    fav_photos=Favourite.objects.filter(user=profile)
+    photos=set()
+    for photo in fav_photos:
+        photos.add(photo.photo)
+    serializer=EventPhotoSerializer([fav.photo for fav in fav_photos],many=True)
+    return Response(serializer.data,status=200)
+
+@api_view(['POST'])
+def update_profile_picture(request):
+    profile = request.user.profile
+    new_picture = request.FILES.get('profile_picture')
+
+    if not new_picture:
+        return Response({'error': 'No picture uploaded.'}, status=400)
+
+    profile.profile_picture = new_picture
+    profile.save()
+
+    return Response({'message': 'Profile picture updated successfully.'}, status=200)
+@api_view(['POST'])
+def update_bio(request):
+    
+    profile=request.user.profile
+    bio=request.data.get("bio")
+    profile.bio=bio
+    profile.save()
+    return Response({'message':'Bio updates successfully'},status=200)

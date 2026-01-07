@@ -18,4 +18,7 @@ urlpatterns = [
     path('api/photo_properties/',views.photo_properties,name='photo_properties'),
     path('api/toggle_like/',views.toggle_like,name='toggle_like'),
     path('api/toggle_favourite/',views.toggle_favourite,name='toggle_favourite'),
+    path('api/favourite_photos/',views.favourite_photos,name='favourite_photos'),
+    path('api/update_profile_picture/',views.update_profile_picture,name='update_profile_picture'), 
+    path('api/update_bio/',views.update_bio,name='update_bio'),
 ]

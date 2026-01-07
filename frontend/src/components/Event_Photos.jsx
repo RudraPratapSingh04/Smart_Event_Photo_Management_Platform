@@ -26,10 +26,12 @@ function Event_Photos() {
   const [gpsLocation,setGPSLocation]=useState("");
   const [cameraModel,setCameraModel]=useState("Sony");
   const [uploadDate,setUploadDate]=useState("");
+  const [showTagSection,setShowTagSection]=useState(false);
   useEffect(()=>{
     if(!isImageOpen||!photos[imageSelected]){
       return;
     }
+    setShowProperties(false);
     const photo_id=photos[imageSelected].id;
     const fetchProperties=async()=>{
       const csrfToken = getCSRFToken();
@@ -408,7 +410,12 @@ const handleShowProperties=()=>{
               </button>
             )}
 
-            <button>Comment</button>
+            <button className="border-white p-2 bg-white text-red-400 rounded-xl">
+              Comment
+            </button>
+            <button className="border-white p-2 bg-white text-red-400 rounded-xl">
+              Tag
+            </button>
             {isFavourite ? (
               <button
                 onClick={handleFavourite}
@@ -437,9 +444,10 @@ const handleShowProperties=()=>{
             >
               Download
             </button>
-            <button 
-            onClick={handleShowProperties}
-            className="border-white p-2 bg-white text-red-400 rounded-xl">
+            <button
+              onClick={handleShowProperties}
+              className="border-white p-2 bg-white text-red-400 rounded-xl"
+            >
               Properties
             </button>
           </div>
@@ -448,10 +456,11 @@ const handleShowProperties=()=>{
               <p>Shutter_speed:{shutterSpeed}</p>
               <p>Camera Model:{cameraModel}</p>
               <p>GPS Location : {gpsLocation}</p>
-              <p>Upload Date : {uploadDate.slice(0,10)}</p>
+              <p>Upload Date : {uploadDate.slice(0, 10)}</p>
               <p>Aperture:{aperture}</p>
             </div>
           )}
+        
         </div>
       )}
 

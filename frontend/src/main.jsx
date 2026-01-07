@@ -9,6 +9,7 @@ import Profile from "./components/Profile.jsx";
 import Events from "./components/Events.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import Event_Photos from "./components/Event_Photos.jsx";
+import Favourite from "./components/Favourite.jsx";
 import {
   createBrowserRouter,
   Route,
@@ -64,12 +65,20 @@ const router = createBrowserRouter(
         }
       />
       <Route
-      path="event_photos/:event_slug"
-      element={<
-        ProtectedRoute>
-          <Event_Photos />
-        </ProtectedRoute>
-      }
+        path="/favourite"
+        element={
+          <ProtectedRoute>
+            <Favourite />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="event_photos/:event_slug"
+        element={
+          <ProtectedRoute>
+            <Event_Photos />
+          </ProtectedRoute>
+        }
       ></Route>
     </>
   )

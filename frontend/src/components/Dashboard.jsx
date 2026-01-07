@@ -70,12 +70,18 @@ function Dashboard() {
           </h1>
           <p className="text-gray-600 mb-4">Email: {user?.email}</p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-4 ">
             <button
               onClick={() => navigate("/events")}
               className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
             >
               Load Events
+            </button>
+            <button
+              onClick={() => navigate("/favourite")}
+              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+            >
+              View Favourites
             </button>
           </div>
         </div>
