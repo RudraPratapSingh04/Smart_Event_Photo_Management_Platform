@@ -12,107 +12,180 @@ function Event_Photos() {
   const [showModal, setShowModal] = useState(false);
   const [uploadPhotoError, setUploadPhotoError] = useState("");
   const [selectedPhotos, setSelectedPhotos] = useState([]);
-  const [uploading,setUploading]=useState(false);
-  const [imageSelected,setImageSelected]=useState(0);
+  const [uploading, setUploading] = useState(false);
+  const [imageSelected, setImageSelected] = useState(0);
   const [isImageOpen, setIsImageOpen] = useState(false);
-  const [showProperties,setShowProperties]=useState(false);
-  const [loadingProperties,setLoadingProperties]=useState(false);
-  const [likesCount,setLikesCount]=useState(0);
-  const [commentsCount,setCommentsCount]=useState(0);
-  const [isLiked,setIsLiked]=useState(false)
-  const [isFavourite,setIsFavourite]=useState(false);
-  const [aperture,setAperture]=useState("");
-  const [shutterSpeed,setShutterSpeed]=useState("");
-  const [gpsLocation,setGPSLocation]=useState("");
-  const [cameraModel,setCameraModel]=useState("Sony");
-  const [uploadDate,setUploadDate]=useState("");
-  const [showTagSection,setShowTagSection]=useState(false);
-  useEffect(()=>{
-    if(!isImageOpen||!photos[imageSelected]){
+  const [showProperties, setShowProperties] = useState(false);
+  const [loadingProperties, setLoadingProperties] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
+  const [commentsCount, setCommentsCount] = useState(0);
+  const [isLiked, setIsLiked] = useState(false);
+  const [isFavourite, setIsFavourite] = useState(false);
+  const [aperture, setAperture] = useState("");
+  const [shutterSpeed, setShutterSpeed] = useState("");
+  const [gpsLocation, setGPSLocation] = useState("");
+  const [cameraModel, setCameraModel] = useState("Sony");
+  const [uploadDate, setUploadDate] = useState("");
+  const [showTagSection, setShowTagSection] = useState(false);
+  const [taggedBy, setTaggedBy] = useState([]);
+  const [taggedUsers, setTaggedUsers] = useState([]);
+  const [showTagUserInput, setShowTagUserInput] = useState(false);
+  const [tagQuery, setTagQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [tagging, setTagging] = useState(false);
+
+  useEffect(() => {
+    if (!isImageOpen || !photos[imageSelected]) {
       return;
     }
+    setShowTagSection(false);
     setShowProperties(false);
-    const photo_id=photos[imageSelected].id;
-    const fetchProperties=async()=>{
+    const photo_id = photos[imageSelected].id;
+    const fetchProperties = async () => {
       const csrfToken = getCSRFToken();
-      setLoadingProperties(true)
-      try{
-         const response = await fetch(
-           "http://localhost:8000/api/photo_properties/",
-           {
-             method: "POST",
-             credentials: "include",
-             headers: {
-               "Content-Type": "application/json",
-               "X-CSRFToken": csrfToken,
-             },
-             body: JSON.stringify({
-               photo_id: photos[imageSelected].id,
-             }),
-             
-           }
-         );
-    if(response.ok){
-      const data=await response.json()
-      setLikesCount(data.likes_count);
-      setCommentsCount(data.comments_count);
-      setIsLiked(data.is_Liked);
-      setLoadingProperties(false);
-      setIsFavourite(data.isFavourite);
-      setAperture(data.aperture);
-      setShutterSpeed(data.shutter_speed);
-      setGPSLocation(data.gps_location);
-      setCameraModel(data.camera_model);
-      setUploadDate(data.uploaded_at);
-    }
-    else{
-        console.error("Failed to fetch photo properties");
-    }
-  }
-  catch(err){
-    console.error(err);
-  }
-  finally{
-    setLoadingProperties(false);
-  }
+      setLoadingProperties(true);
+      try {
+        const response = await fetch(
+          "http://localhost:8000/api/photo_properties/",
+          {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": csrfToken,
+            },
+            body: JSON.stringify({
+              photo_id: photos[imageSelected].id,
+            }),
+          }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          setLikesCount(data.likes_count);
+          setCommentsCount(data.comments_count);
+          setIsLiked(data.is_Liked);
+          setLoadingProperties(false);
+          setIsFavourite(data.isFavourite);
+          setAperture(data.aperture);
+          setShutterSpeed(data.shutter_speed);
+          setGPSLocation(data.gps_location);
+          setCameraModel(data.camera_model);
+          setUploadDate(data.uploaded_at);
+        } else {
+          console.error("Failed to fetch photo properties");
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoadingProperties(false);
+      }
     };
     fetchProperties();
+  }, [isImageOpen, imageSelected, isLiked]);
 
-  },[isImageOpen,imageSelected,isLiked]);
-  
-  
-  
-  
+  const searchUsers = async (query) => {
+    if (!query) {
+      setSearchResults([]);
+      return;
+    }
 
-  
-  const fetchPhotos = async () => {
-        try {
-          console.log("Fetching photos for event:", event_slug);
-          const response = await fetch(
-            `http://localhost:8000/api/event_photos/${event_slug}/`,
-            {
-              method: "GET",
-              credentials: "include",
-            }
-          );
-          if (response.ok) {
-            console.log("Photos fetched successfully");
+    try {
+      const res = await fetch(
+        `http://localhost:8000/api/search_users/?q=${query}`,
+        { credentials: "include" }
+      );
+      const data = await res.json();
+      setSearchResults(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+  const tagUser = async (userId) => {
+    const csrf = getCSRFToken();
+    setTagging(true);
 
-            const data = await response.json();
-            console.log(response);
-            setPhotos(data);
-          } else {
-            setError("Failed to fetch photos");
-          }
-        } catch (err) {
-          console.error("Error fetching photos:", err);
-          setError("Error fetching photos");
-        } finally {
-          setLoading(false);
+    try {
+      const res = await fetch("http://localhost:8000/api/tagUser/", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": csrf,
+        },
+        body: JSON.stringify({
+          photo_id: photos[imageSelected].id,
+          user_id: userId,
+        }),
+      });
+
+      if (res.ok) {
+        await loadTagSection();
+        setTagQuery("");
+        setSearchResults([]);
+        setShowTagUserInput(false);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setTagging(false);
+    }
+  };
+
+  const loadTagSection = async () => {
+    setShowTagSection(true);
+    const csrf = getCSRFToken();
+    try {
+      const response = await fetch(
+        "http://localhost:8000/api/load_tagged_users/",
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrf,
+          },
+          body: JSON.stringify({
+            photo_id: photos[imageSelected].id,
+          }),
         }
-      };
-  useEffect(() => {
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setTaggedBy(data.tagged_by);
+        setTaggedUsers(data.tagged_users);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
+  const fetchPhotos = async () => {
+    try {
+      console.log("Fetching photos for event:", event_slug);
+      const response = await fetch(
+        `http://localhost:8000/api/event_photos/${event_slug}/`,
+        {
+          method: "GET",
+          credentials: "include",
+        }
+      );
+      if (response.ok) {
+        console.log("Photos fetched successfully");
+
+        const data = await response.json();
+        console.log(response);
+        setPhotos(data);
+      } else {
+        setError("Failed to fetch photos");
+      }
+    } catch (err) {
+      console.error("Error fetching photos:", err);
+      setError("Error fetching photos");
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
     fetchPhotos();
   }, [event_slug]);
   if (loading) {
@@ -125,36 +198,35 @@ function Event_Photos() {
       </div>
     );
   }
-  const handleLike=async()=>{
+  const handleLike = async () => {
     const csrfToken = getCSRFToken();
-    try{
-        const response = await fetch("http://localhost:8000/api/toggle_like/", {
+    try {
+      const response = await fetch("http://localhost:8000/api/toggle_like/", {
         method: "POST",
         credentials: "include",
-        headers:{
-            "Content-Type":"application/json",
-            "X-CSRFToken":csrfToken,
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": csrfToken,
         },
-        body:JSON.stringify({
-            photo_id:photos[imageSelected].id,
-            is_Liked:isLiked,
-        })
-        
+        body: JSON.stringify({
+          photo_id: photos[imageSelected].id,
+          is_Liked: isLiked,
+        }),
       });
-if (response.ok) {
-  setIsLiked(!isLiked);
-}
+      if (response.ok) {
+        setIsLiked(!isLiked);
+      }
+    } catch (err) {
+      console.error("Error toggling like:", err);
     }
-  catch(err){
-    console.error("Error toggling like:",err
-  );
-  }
-  }
+  };
 
-    const handleFavourite = async () => {
-      const csrfToken = getCSRFToken();
-      try {
-        const response = await fetch("http://localhost:8000/api/toggle_favourite/", {
+  const handleFavourite = async () => {
+    const csrfToken = getCSRFToken();
+    try {
+      const response = await fetch(
+        "http://localhost:8000/api/toggle_favourite/",
+        {
           method: "POST",
           credentials: "include",
           headers: {
@@ -165,27 +237,28 @@ if (response.ok) {
             photo_id: photos[imageSelected].id,
             is_Favourite: isFavourite,
           }),
-        });
-        if (response.ok) {
-          setIsFavourite(!isFavourite);
         }
-      } catch (err) {
-        console.error("Error toggling favourite:", err);
+      );
+      if (response.ok) {
+        setIsFavourite(!isFavourite);
       }
-    };
+    } catch (err) {
+      console.error("Error toggling favourite:", err);
+    }
+  };
 
-const handleShowProperties=()=>{
+  const handleShowProperties = () => {
     setShowProperties(!showProperties);
-  }
+  };
   const displayEventPhotos =
     photos.length > 0 ? (
       <div className="p-4 overflow-x-auto">
         <div className=" grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 border gap-4 border-gray-300">
-          {photos.map((photo,index) => (
+          {photos.map((photo, index) => (
             <div
               key={photo.id}
-              onClick={()=>{
-                setImageSelected(index)
+              onClick={() => {
+                setImageSelected(index);
 
                 setIsImageOpen(true);
               }}
@@ -205,57 +278,50 @@ const handleShowProperties=()=>{
         No photos available for this event.
       </div>
     );
-      const getCSRFToken = () => {
-        return document.cookie
-          .split("; ")
-          .find((row) => row.startsWith("csrftoken="))
-          ?.split("=")[1];
-      };
-    const handleUpload=async()=>{
-        setShowModal(false);
-       
-        const csrfToken = getCSRFToken();
-        if(!selectedPhotos || selectedPhotos.length===0){
-            setUploadPhotoError("No photos selected for upload.");
-            return;
-        }
-         setUploading(true);
-        const formData=new FormData();
-        for(let i=0;i<selectedPhotos.length;i++){
-            formData.append('photos',selectedPhotos[i]);
-        }
-        formData.append("event_slug",event_slug);
-        try{
-            const response = await fetch(
-              "http://localhost:8000/api/upload_photos/",
-              {
-                method: "POST",
-                credentials: "include",
-                body: formData,
-                headers: {
-                  "X-CSRFToken": csrfToken,
-                },
-              }
-            );
-        if(response.ok){
-            setShowModal(false);
-            setSelectedPhotos([]);
-            await fetchPhotos();
+  const getCSRFToken = () => {
+    return document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("csrftoken="))
+      ?.split("=")[1];
+  };
+  const handleUpload = async () => {
+    setShowModal(false);
 
-        }
-        else{
-            setUploading(false)
-            setUploadPhotoError("Failed to upload photos.");
-        }
-        }
-        catch(err){
-            setUploadPhotoError("Error uploading photos.");
-            console.error("Error uploading photos:",err);
-        }finally{
-            setUploading(false);
-        }
-           
+    const csrfToken = getCSRFToken();
+    if (!selectedPhotos || selectedPhotos.length === 0) {
+      setUploadPhotoError("No photos selected for upload.");
+      return;
     }
+    setUploading(true);
+    const formData = new FormData();
+    for (let i = 0; i < selectedPhotos.length; i++) {
+      formData.append("photos", selectedPhotos[i]);
+    }
+    formData.append("event_slug", event_slug);
+    try {
+      const response = await fetch("http://localhost:8000/api/upload_photos/", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+        headers: {
+          "X-CSRFToken": csrfToken,
+        },
+      });
+      if (response.ok) {
+        setShowModal(false);
+        setSelectedPhotos([]);
+        await fetchPhotos();
+      } else {
+        setUploading(false);
+        setUploadPhotoError("Failed to upload photos.");
+      }
+    } catch (err) {
+      setUploadPhotoError("Error uploading photos.");
+      console.error("Error uploading photos:", err);
+    } finally {
+      setUploading(false);
+    }
+  };
   const check_photographer = async () => {
     try {
       const response = await fetch(
@@ -284,8 +350,6 @@ const handleShowProperties=()=>{
     }
     setShowModal(true);
   };
-
-  
 
   return (
     <>
@@ -367,6 +431,103 @@ const handleShowProperties=()=>{
               ✕
             </button>
 
+            {showTagSection && (
+              <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center">
+                <div className="bg-yellow-100 w-full max-w-md rounded-xl p-4 flex flex-col gap-3">
+                  <div className="flex justify-between items-center border-b pb-2">
+                    <h1 className="text-gray-600 font-semibold">Tag Section</h1>
+                    <button
+                      onClick={() => {
+                        setShowTagSection(false);
+                        setShowTagUserInput(false);
+                        setTagQuery("");
+                        setSearchResults([]);
+                      }}
+                      className="text-xl font-bold text-gray-600"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <div className="bg-pink-200 p-3 rounded-lg">
+                    <h2 className="font-semibold mb-2">Tagged By</h2>
+
+                    {taggedBy.length > 0 ? (
+                      taggedBy.map((user) => (
+                        <p key={user.id} className="text-gray-700">
+                          @{user.username}
+                        </p>
+                      ))
+                    ) : (
+                      <p className="text-gray-500">No one has tagged yet</p>
+                    )}
+                  </div>
+                  <div className="bg-pink-200 p-3 rounded-lg">
+                    <div className="flex justify-between items-center mb-2">
+                      <h2 className="font-semibold">Tagged Users</h2>
+                      <button
+                        className="bg-amber-700 text-white p-2 rounded-xl"
+                        onClick={() => {
+                          setShowTagUserInput(!showTagUserInput);
+                          setTagQuery("");
+                          setSearchResults([]);
+                        }}
+                      >
+                        {showTagUserInput ? "Hide search" : "Tag a friend"}
+                      </button>
+                    </div>
+                    {showTagUserInput && (
+                      <div className="mb-3">
+                        <input
+                          type="text"
+                          value={tagQuery}
+                          onChange={(e) => {
+                            setTagQuery(e.target.value);
+                            searchUsers(e.target.value);
+                          }}
+                          placeholder="Search username..."
+                          className="w-full p-2 rounded border"
+                        />
+                        {tagging && (
+                          <p className="text-xs text-gray-600 mt-1">
+                            Tagging...
+                          </p>
+                        )}
+                        {searchResults.length > 0 && (
+                          <div className="bg-white mt-1 rounded shadow max-h-40 overflow-y-auto">
+                            {searchResults.map((user) => (
+                              <div
+                                key={user.id}
+                                className="p-2 hover:bg-gray-100 cursor-pointer"
+                                onClick={() => tagUser(user.id)}
+                              >
+                                @{user.username}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {!tagging && tagQuery && searchResults.length === 0 && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            No users found
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    {taggedUsers.length === 0 ? (
+                      <p className="text-gray-500">No users tagged</p>
+                    ) : (
+                      <ul className="space-y-1">
+                        {taggedUsers.map((user) => (
+                          <li key={user.id} className="text-gray-700">
+                            @{user.username}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {imageSelected > 0 && (
               <button
                 className="absolute left-4 text-white text-4xl"
@@ -410,10 +571,15 @@ const handleShowProperties=()=>{
               </button>
             )}
 
-            <button className="border-white p-2 bg-white text-red-400 rounded-xl">
+            <button
+          
+            className="border-white p-2 bg-white text-red-400 rounded-xl">
               Comment
             </button>
-            <button className="border-white p-2 bg-white text-red-400 rounded-xl">
+            <button
+              onClick={loadTagSection}
+              className="border-white p-2 bg-white text-red-400 rounded-xl"
+            >
               Tag
             </button>
             {isFavourite ? (
@@ -460,7 +626,6 @@ const handleShowProperties=()=>{
               <p>Aperture:{aperture}</p>
             </div>
           )}
-        
         </div>
       )}
 

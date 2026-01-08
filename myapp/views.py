@@ -9,6 +9,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from django.core.mail import send_mail
 from django.conf import settings
+from django.db.models import Q
 
 from myapp.tasks import process_photo
 from .models import OTPVerification,Event
@@ -20,7 +21,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Profile,Photo,Event,Like,Comment,Favourite
+from .models import Profile,Photo,Event,Like,Comment,Favourite,Tag
 
 # from django.views.decorators.csrf import csrf_exempt
 # Create your views here.
@@ -381,3 +382,75 @@ def update_bio(request):
     profile.bio=bio
     profile.save()
     return Response({'message':'Bio updates successfully'},status=200)
+@api_view(['POST'])
+def load_tagged_users(request):
+    photo=Photo.objects.get(id=request.data.get("photo_id"))
+    tagged_whom=Tag.objects.all().filter(photo=photo, tagged_whom=request.user.profile).select_related("tagged_whom").distinct("tagged_whom_id")
+    tagged_users=Tag.objects.all().filter(photo=photo,tagged_by=request.user.profile).select_related("tagged_by","tagged_whom").order_by("tagged_whom_id")
+    taggedBy=[]
+    taggedUsers=[]
+    for tag in tagged_whom:
+        taggedBy.append({
+            "id":tag.tagged_by.user.id,     
+            "username":tag.tagged_by.user.username
+        })
+    for tag in tagged_users:
+        taggedUsers.append({
+            "id":tag.tagged_whom.user.id,
+            "username":tag.tagged_whom.user.username
+        })
+    print(taggedUsers)
+    return Response({
+        "tagged_by":list(taggedBy),
+        "tagged_users":list(taggedUsers)
+    },status=200)
+
+@api_view(["POST"])
+def tagUser(request):
+    photo = Photo.objects.get(id=request.data["photo_id"])
+    user = User.objects.get(id=request.data["user_id"])
+
+    # Prevent self-tagging
+    if user.id == request.user.id:
+        return Response({"message": "You cannot tag yourself."}, status=400)
+
+    Tag.objects.get_or_create(
+        photo=photo,
+        tagged_whom=user.profile,
+        tagged_by=request.user.profile
+    )
+
+    return Response({"success": True})
+@api_view(["GET"])
+def search_users(request):
+    q = request.GET.get("q", "")
+    users = User.objects.filter(username__icontains=q).exclude(id=request.user.id)[:10]
+    return Response([
+        {"id": u.id, "username": u.username}
+        for u in users
+    ])
+
+
+@api_view(["GET"])
+def search_photos(request):
+    """Basic photo search by event title or uploader username."""
+    q = request.GET.get("q", "").strip()
+    if not q:
+        return Response([], status=200)
+
+    photos = Photo.objects.filter(
+        Q(event__title__icontains=q) | Q(uploader_id__user__username__icontains=q)
+    ).select_related("event", "uploader_id")[:25]
+
+    serializer = EventPhotoSerializer(photos, many=True)
+    return Response(serializer.data, status=200)
+
+@api_view(['GET'])
+def tagged_images(request):
+    profile=request.user.profile
+    tagged_images=Tag.objects.filter(tagged_whom=profile)
+    photos=set()
+    for photo in tagged_images:
+        photos.add(photo.photo)
+    serializer=EventPhotoSerializer([tag.photo for tag in tagged_images],many=True)
+    return Response(serializer.data,status=200)

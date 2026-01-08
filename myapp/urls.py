@@ -21,4 +21,11 @@ urlpatterns = [
     path('api/favourite_photos/',views.favourite_photos,name='favourite_photos'),
     path('api/update_profile_picture/',views.update_profile_picture,name='update_profile_picture'), 
     path('api/update_bio/',views.update_bio,name='update_bio'),
+    path('api/load_tagged_users/',views.load_tagged_users,name='load_tagged_users'),
+    path('api/tagUser/',views.tagUser,name='tagUser'),
+    path('api/tag_user/',views.tagUser,name='tag_user_alias'),
+    path('api/search_users/',views.search_users,name='search_users'),
+    path('api/search/',views.search_photos,name='search_photos'),
+    path('api/tagged_images/',views.tagged_images,name='tagged_images'),
+    
 ]

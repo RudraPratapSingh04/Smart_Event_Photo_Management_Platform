@@ -83,6 +83,12 @@ function Dashboard() {
             >
               View Favourites
             </button>
+            <button
+              onClick={() => navigate("/tagged_images")}
+              className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700"
+            >
+              View Tagged Images
+            </button>
           </div>
         </div>
       </div>

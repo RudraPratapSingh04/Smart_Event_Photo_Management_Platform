@@ -24,39 +24,50 @@ function Event_Photos() {
   const [gpsLocation, setGPSLocation] = useState("");
   const [cameraModel, setCameraModel] = useState("Sony");
   const [uploadDate, setUploadDate] = useState("");
-    const handleFavourite = async () => {
-      const csrfToken = getCSRFToken();
-      try {
-        const response = await fetch(
-          "http://localhost:8000/api/toggle_favourite/",
-          {
-            method: "POST",
-            credentials: "include",
-            headers: {
-              "Content-Type": "application/json",
-              "X-CSRFToken": csrfToken,
-            },
-            body: JSON.stringify({
-              photo_id: photos[imageSelected].id,
-              is_Favourite: isFavourite,
-            }),
-          }
-        );
-        if (response.ok) {
-          setIsFavourite(!isFavourite);
+    const [showTagSection, setShowTagSection] = useState(false);
+    const [taggedBy, setTaggedBy] = useState([]);
+    const [taggedUsers, setTaggedUsers] = useState([]);
+    const [showTagUserInput, setShowTagUserInput] = useState(false);
+    const [tagQuery, setTagQuery] = useState("");
+    const [searchResults, setSearchResults] = useState([]);
+    const [tagging, setTagging] = useState(false);
+  const handleFavourite = async () => {
+  const csrfToken = getCSRFToken();
+    try {
+      const response = await fetch(
+        "http://localhost:8000/api/toggle_favourite/",
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrfToken,
+          },
+          body: JSON.stringify({
+            photo_id: photos[imageSelected].id,
+            is_Favourite: isFavourite,
+          }),
         }
-      } catch (err) {
-        console.error("Error toggling favourite:", err);
-      }finally{
-        setIsImageOpen(false);
-        fetchPhotos();
+      );
+      if (response.ok) {
+        setIsFavourite(!isFavourite);
       }
-    };
-  
+    } catch (err) {
+      console.error("Error toggling favourite:", err);
+    } finally {
+      setIsImageOpen(false);
+      fetchPhotos();
+    }
+  };
+
+
+
+
   useEffect(() => {
     if (!isImageOpen || !photos[imageSelected]) {
       return;
     }
+    setShowTagSection(false);
     setShowProperties(false);
     const photo_id = photos[imageSelected].id;
     const fetchProperties = async () => {
@@ -101,11 +112,88 @@ function Event_Photos() {
     fetchProperties();
   }, [isImageOpen, imageSelected, isLiked]);
 
+const searchUsers = async (query) => {
+  if (!query) {
+    setSearchResults([]);
+    return;
+  }
+
+  try {
+    const res = await fetch(
+      `http://localhost:8000/api/search_users/?q=${query}`,
+      { credentials: "include" }
+    );
+    const data = await res.json();
+    setSearchResults(data);
+  } catch (err) {
+    console.error(err);
+  }
+};
+const tagUser = async (userId) => {
+  const csrf = getCSRFToken();
+  setTagging(true);
+
+  try {
+    const res = await fetch("http://localhost:8000/api/tagUser/", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": csrf,
+      },
+      body: JSON.stringify({
+        photo_id: photos[imageSelected].id,
+        user_id: userId,
+      }),
+    });
+
+    if (res.ok) {
+      await loadTagSection();
+      setTagQuery("");
+      setSearchResults([]);
+      setShowTagUserInput(false);
+    }
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setTagging(false);
+  }
+};
+
+const loadTagSection = async () => {
+  setShowTagSection(true);
+  const csrf = getCSRFToken();
+  try {
+    const response = await fetch(
+      "http://localhost:8000/api/load_tagged_users/",
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": csrf,
+        },
+        body: JSON.stringify({
+          photo_id: photos[imageSelected].id,
+        }),
+      }
+    );
+    if (response.ok) {
+      const data = await response.json();
+      setTaggedBy(data.tagged_by);
+      setTaggedUsers(data.tagged_users);
+    }
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+
   const fetchPhotos = async () => {
     try {
       console.log("Fetching favourite photos:");
       const response = await fetch(
-        `http://localhost:8000/api/favourite_photos/`,
+        `http://localhost:8000/api/tagged_images/`,
         {
           method: "GET",
           credentials: "include",
@@ -129,7 +217,7 @@ function Event_Photos() {
   };
   useEffect(() => {
     fetchPhotos();
-  },[]);
+  }, []);
   if (loading) {
     return (
       <div
@@ -192,9 +280,7 @@ function Event_Photos() {
         </div>
       </div>
     ) : (
-      <div className="p-4 text-gray-500">
-        No photos marked as favourites
-      </div>
+      <div className="p-4 text-gray-500">You have not been tagged yet.</div>
     );
   const getCSRFToken = () => {
     return document.cookie
@@ -203,23 +289,17 @@ function Event_Photos() {
       ?.split("=")[1];
   };
 
-
-
   return (
     <>
       <Header />
       <div>
         <div></div>
-
       </div>
       {displayEventPhotos && displayEventPhotos ? (
         displayEventPhotos
       ) : (
         <div>No photos marked as favourites</div>
       )}
-  
-
-    
 
       {isImageOpen && (
         <div className="overflow-x-auto fixed inset-0 z-50 bg-black-800 bg-black bg-opacity-80 flex flex-col items-center justify-center">
@@ -254,9 +334,7 @@ function Event_Photos() {
               </button>
             )}
           </div>
-          <div className="text-white">
-            {likesCount} Likes
-          </div>
+          <div className="text-white">{likesCount} Likes</div>
           <div className=" gap-5 flex text-white mt-5 w-full justify-center max-w-6xl">
             {isLiked ? (
               <button
@@ -273,8 +351,108 @@ function Event_Photos() {
                 Like
               </button>
             )}
+            {showTagSection && (
+              <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center">
+                <div className="bg-yellow-100 w-full max-w-md rounded-xl p-4 flex flex-col gap-3">
+                  <div className="flex justify-between items-center border-b pb-2">
+                    <h1 className="text-gray-600 font-semibold">Tag Section</h1>
+                    <button
+                      onClick={() => {
+                        setShowTagSection(false);
+                        setShowTagUserInput(false);
+                        setTagQuery("");
+                        setSearchResults([]);
+                      }}
+                      className="text-xl font-bold text-gray-600"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <div className="bg-pink-200 p-3 rounded-lg">
+                    <h2 className="font-semibold mb-2">Tagged By</h2>
 
-  
+                    {taggedBy.length > 0 ? (
+                      taggedBy.map((user) => (
+                        <p key={user.id} className="text-gray-700">
+                          @{user.username}
+                        </p>
+                      ))
+                    ) : (
+                      <p className="text-gray-500">No one has tagged yet</p>
+                    )}
+                  </div>
+                  <div className="bg-pink-200 p-3 rounded-lg">
+                    <div className="flex justify-between items-center mb-2">
+                      <h2 className="font-semibold">Tagged Users</h2>
+                      <button
+                        className="bg-amber-700 text-white p-2 rounded-xl"
+                        onClick={() => {
+                          setShowTagUserInput(!showTagUserInput);
+                          setTagQuery("");
+                          setSearchResults([]);
+                        }}
+                      >
+                        {showTagUserInput ? "Hide search" : "Tag a friend"}
+                      </button>
+                    </div>
+                    {showTagUserInput && (
+                      <div className="mb-3">
+                        <input
+                          type="text"
+                          value={tagQuery}
+                          onChange={(e) => {
+                            setTagQuery(e.target.value);
+                            searchUsers(e.target.value);
+                          }}
+                          placeholder="Search username..."
+                          className="w-full p-2 rounded border"
+                        />
+                        {tagging && (
+                          <p className="text-xs text-gray-600 mt-1">
+                            Tagging...
+                          </p>
+                        )}
+                        {searchResults.length > 0 && (
+                          <div className="bg-white mt-1 rounded shadow max-h-40 overflow-y-auto">
+                            {searchResults.map((user) => (
+                              <div
+                                key={user.id}
+                                className="p-2 hover:bg-gray-100 cursor-pointer"
+                                onClick={() => tagUser(user.id)}
+                              >
+                                @{user.username}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {!tagging && tagQuery && searchResults.length === 0 && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            No users found
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    {taggedUsers.length === 0 ? (
+                      <p className="text-gray-500">No users tagged</p>
+                    ) : (
+                      <ul className="space-y-1">
+                        {taggedUsers.map((user) => (
+                          <li key={user.id} className="text-gray-700">
+                            @{user.username}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+            <button
+              onClick={loadTagSection}
+              className="border-white p-2 bg-white text-red-400 rounded-xl"
+            >
+              Tag
+            </button>
             {isFavourite ? (
               <button
                 onClick={handleFavourite}

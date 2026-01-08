@@ -125,7 +125,7 @@ class Tag(models.Model):
        tagged_by=models.ForeignKey(Profile,on_delete=models.CASCADE,related_name='tagged_by')
        tagged_whom=models.ForeignKey(Profile,on_delete=models.CASCADE,related_name='tagged_whom')
        tagged_at=models.DateTimeField(auto_now_add=True)
-       photo_id=models.ForeignKey(Photo,on_delete=models.CASCADE)
+       photo=models.ForeignKey(Photo,on_delete=models.CASCADE)
 class Photo_tag(models.Model):
        tag_description=models.TextField(max_length=50)
        photo_id=models.ForeignKey(Photo,on_delete=models.PROTECT)
