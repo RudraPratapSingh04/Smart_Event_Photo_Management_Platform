@@ -410,7 +410,6 @@ def tagUser(request):
     photo = Photo.objects.get(id=request.data["photo_id"])
     user = User.objects.get(id=request.data["user_id"])
 
-    # Prevent self-tagging
     if user.id == request.user.id:
         return Response({"message": "You cannot tag yourself."}, status=400)
 
@@ -433,7 +432,6 @@ def search_users(request):
 
 @api_view(["GET"])
 def search_photos(request):
-    """Basic photo search by event title or uploader username."""
     q = request.GET.get("q", "").strip()
     if not q:
         return Response([], status=200)
@@ -454,3 +452,30 @@ def tagged_images(request):
         photos.add(photo.photo)
     serializer=EventPhotoSerializer([tag.photo for tag in tagged_images],many=True)
     return Response(serializer.data,status=200)
+@api_view(['POST'])
+def load_comments(request):
+    photo=Photo.objects.get(id=request.data.get("photo_id"))
+    comments=Comment.objects.filter(photo=photo).order_by("-commented_at")[:10]
+    comments_data=[]
+    for comment in comments:
+        comments_data.append({
+            "id":comment.id,
+            "commented_by":comment.commented_by.user.username,
+            "content":comment.description,
+            "commented_at":comment.commented_at
+        })
+    return Response({
+        "comments":comments_data
+    },status=200)
+
+@api_view(['POST'])
+def add_comment(request):
+    profile=request.user.profile
+    description=request.data.get("content")
+    photo=Photo.objects.get(id=request.data.get("photo_id"))
+    Comment.objects.create(
+        commented_by=profile,
+        description=description,
+        photo=photo
+   )    
+    return Response({"message":"Comment added successfully"},status=200)

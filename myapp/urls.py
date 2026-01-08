@@ -27,5 +27,7 @@ urlpatterns = [
     path('api/search_users/',views.search_users,name='search_users'),
     path('api/search/',views.search_photos,name='search_photos'),
     path('api/tagged_images/',views.tagged_images,name='tagged_images'),
+    path('api/load_comments/',views.load_comments,name='load_comments'),
+    path('api/add_comment/',views.add_comment,name='add_comment'),
     
 ]

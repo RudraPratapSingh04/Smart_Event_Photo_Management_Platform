@@ -33,11 +33,14 @@ function Event_Photos() {
   const [tagQuery, setTagQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [tagging, setTagging] = useState(false);
-
+  const [showCommentSection,setShowCommentSection]=useState(false);
+  const [commentsData,setCommentsData]=useState([]);
+  const [comment,setComment]=useState("");
   useEffect(() => {
     if (!isImageOpen || !photos[imageSelected]) {
       return;
     }
+    setShowCommentSection(false);
     setShowTagSection(false);
     setShowProperties(false);
     const photo_id = photos[imageSelected].id;
@@ -130,6 +133,36 @@ function Event_Photos() {
       setTagging(false);
     }
   };
+const loadCommentSection=async()=>{
+  setShowCommentSection(true);
+  const csrf=getCSRFToken();
+  try{
+    const response=await fetch("http://localhost:8000/api/load_comments/",{
+      method:"POST",
+      credentials:"include",
+      headers:{
+        "Content-Type":"application/json",
+        "X-CSRFToken":csrf,
+      },
+      body:JSON.stringify({
+        photo_id:photos[imageSelected].id,
+      })
+      
+
+      
+    });
+    if(response.ok){
+        const data=await response.json();
+        setCommentsData(data.comments);
+        
+      }
+    }
+      catch(err){
+        console.error(err);
+      }
+    }
+  
+
 
   const loadTagSection = async () => {
     setShowTagSection(true);
@@ -340,7 +373,30 @@ function Event_Photos() {
       console.error("Error checking photographer status:", error);
     }
   };
-
+const handleAddComment=async()=>{
+  if(comment.trim()==="") return;
+  const csrf=getCSRFToken();
+  try{
+    const response=await fetch("http://localhost:8000/api/add_comment/",{
+      method:"POST",
+      credentials:"include",
+      headers:{
+        "Content-Type":"application/json",
+        "X-CSRFToken":csrf,
+      },
+      body:JSON.stringify({
+        photo_id:photos[imageSelected].id,
+        content:comment,
+      })
+    });
+    if(response.ok){
+      setComment("");
+      await loadCommentSection();
+    }
+  } catch (error) {
+    console.error("Error adding comment:", error);
+  }
+};
   const uploadPhoto = async () => {
     setUploadPhotoError("");
     let is_photographer = await check_photographer();
@@ -441,6 +497,7 @@ function Event_Photos() {
                         setShowTagSection(false);
                         setShowTagUserInput(false);
                         setTagQuery("");
+
                         setSearchResults([]);
                       }}
                       className="text-xl font-bold text-gray-600"
@@ -527,7 +584,69 @@ function Event_Photos() {
                 </div>
               </div>
             )}
+            {showCommentSection && (
+              <>
+                <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center">
+                  <div className="bg-yellow-100 w-full max-w-md rounded-xl p-4 flex flex-col gap-3">
+                    <div className="flex justify-between items-center pb-2">
+                      <h1 className="text-gray-600 font-semibold">
+                        Comments Section
+                      </h1>
+                      <button
+                        onClick={() => {
+                          setShowCommentSection(false);
+                        }}
+                        className="text-xl font-bold text-gray-600"
+                      >
+                        ✕
+                      </button>
+                    </div>
 
+                    <input
+                      type="text"
+                      id="commentInput"
+                      placeholder="Type a comment here"
+                      className="bg-white p-2 rounded"
+                      onChange={(e) => {
+                        setComment(e.target.value);
+                      }}
+                    />
+                    <button className="bg-green-200 p-2 rounded-xl font-bold"
+                      onClick={() => {
+                        
+                          handleAddComment();
+                          document.getElementById("commentInput").value = "";
+                        
+                      }}
+                      > Add Comment
+                    </button>
+
+                    <div className="flex flex-col border-b pb-2 max-h-60 overflow-y-auto">
+                      {commentsData.length === 0 ? (
+                        <p className="text-gray-500">No comments yet</p>
+                      ) : (
+                        commentsData.map((comment) => (
+                          <div
+                            key={comment.id}
+                            className="min-w-100 border-b border-gray-300 pb-2 mb-2"
+                          >
+                            <div className="flex justify-between mb-1">
+                              <p className="font-semibold text-gray-700">
+                                @{comment.commented_by}
+                              </p>
+                              <p className="font-semibold text-gray-700 mr-2">
+                                {comment.commented_at.slice(11, 16)}
+                              </p>
+                            </div>
+                            <p className="text-gray-600">{comment.content}</p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
             {imageSelected > 0 && (
               <button
                 className="absolute left-4 text-white text-4xl"
@@ -572,8 +691,9 @@ function Event_Photos() {
             )}
 
             <button
-          
-            className="border-white p-2 bg-white text-red-400 rounded-xl">
+              onClick={loadCommentSection}
+              className="border-white p-2 bg-white text-red-400 rounded-xl"
+            >
               Comment
             </button>
             <button
