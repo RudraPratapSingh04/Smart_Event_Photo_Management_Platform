@@ -33,9 +33,9 @@ function Event_Photos() {
   const [tagQuery, setTagQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [tagging, setTagging] = useState(false);
-  const [showCommentSection,setShowCommentSection]=useState(false);
-  const [commentsData,setCommentsData]=useState([]);
-  const [comment,setComment]=useState("");
+  const [showCommentSection, setShowCommentSection] = useState(false);
+  const [commentsData, setCommentsData] = useState([]);
+  const [comment, setComment] = useState("");
   useEffect(() => {
     if (!isImageOpen || !photos[imageSelected]) {
       return;
@@ -133,36 +133,29 @@ function Event_Photos() {
       setTagging(false);
     }
   };
-const loadCommentSection=async()=>{
-  setShowCommentSection(true);
-  const csrf=getCSRFToken();
-  try{
-    const response=await fetch("http://localhost:8000/api/load_comments/",{
-      method:"POST",
-      credentials:"include",
-      headers:{
-        "Content-Type":"application/json",
-        "X-CSRFToken":csrf,
-      },
-      body:JSON.stringify({
-        photo_id:photos[imageSelected].id,
-      })
-      
-
-      
-    });
-    if(response.ok){
-        const data=await response.json();
+  const loadCommentSection = async () => {
+    setShowCommentSection(true);
+    const csrf = getCSRFToken();
+    try {
+      const response = await fetch("http://localhost:8000/api/load_comments/", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": csrf,
+        },
+        body: JSON.stringify({
+          photo_id: photos[imageSelected].id,
+        }),
+      });
+      if (response.ok) {
+        const data = await response.json();
         setCommentsData(data.comments);
-        
       }
+    } catch (err) {
+      console.error(err);
     }
-      catch(err){
-        console.error(err);
-      }
-    }
-  
-
+  };
 
   const loadTagSection = async () => {
     setShowTagSection(true);
@@ -253,26 +246,34 @@ const loadCommentSection=async()=>{
       console.error("Error toggling like:", err);
     }
   };
-const handleDownload = () => {
-  const imageUrl = photos[imageSelected]?.image;
-  const imageId = photos[imageSelected]?.id;
-
-  if (!imageUrl) {
-    alert("Image not found");
-    return;
-  }
-
-  const link = document.createElement("a");
-  link.href = imageUrl;
-  link.download = `photo_${imageId}.jpg`;
-  link.rel = "noopener noreferrer";
-
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-};
-
-
+  const handleDownload = async () => {
+    const imageId = photos[imageSelected]?.id;
+    if (!imageId) {
+      alert("Image not found");
+      return;
+    }
+    try {
+      const response = await fetch(
+        `http://localhost:8000/api/download_photo/${imageId}/`,
+        { credentials: "include" }
+      );
+      if (!response.ok) {
+        alert("Failed to download image");
+        return;
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `photo_${imageId}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      alert("Error downloading image");
+    }
+  };
 
   const handleFavourite = async () => {
     const csrfToken = getCSRFToken();
@@ -393,30 +394,30 @@ const handleDownload = () => {
       console.error("Error checking photographer status:", error);
     }
   };
-const handleAddComment=async()=>{
-  if(comment.trim()==="") return;
-  const csrf=getCSRFToken();
-  try{
-    const response=await fetch("http://localhost:8000/api/add_comment/",{
-      method:"POST",
-      credentials:"include",
-      headers:{
-        "Content-Type":"application/json",
-        "X-CSRFToken":csrf,
-      },
-      body:JSON.stringify({
-        photo_id:photos[imageSelected].id,
-        content:comment,
-      })
-    });
-    if(response.ok){
-      setComment("");
-      await loadCommentSection();
+  const handleAddComment = async () => {
+    if (comment.trim() === "") return;
+    const csrf = getCSRFToken();
+    try {
+      const response = await fetch("http://localhost:8000/api/add_comment/", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": csrf,
+        },
+        body: JSON.stringify({
+          photo_id: photos[imageSelected].id,
+          content: comment,
+        }),
+      });
+      if (response.ok) {
+        setComment("");
+        await loadCommentSection();
+      }
+    } catch (error) {
+      console.error("Error adding comment:", error);
     }
-  } catch (error) {
-    console.error("Error adding comment:", error);
-  }
-};
+  };
   const uploadPhoto = async () => {
     setUploadPhotoError("");
     let is_photographer = await check_photographer();
@@ -738,7 +739,7 @@ const handleAddComment=async()=>{
                 Add to Favourites
               </button>
             )}
-            
+
             <button
               onClick={() => {
                 // const link = document.createElement("a");

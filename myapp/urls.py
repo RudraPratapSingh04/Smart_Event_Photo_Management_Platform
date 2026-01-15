@@ -29,5 +29,6 @@ urlpatterns = [
     path('api/tagged_images/',views.tagged_images,name='tagged_images'),
     path('api/load_comments/',views.load_comments,name='load_comments'),
     path('api/add_comment/',views.add_comment,name='add_comment'),
+    path('api/download_photo/<int:photo_id>/',views.download_photo,name='download_photo'),
     
 ]

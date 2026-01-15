@@ -22,6 +22,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from .models import Profile,Photo,Event,Like,Comment,Favourite,Tag
+from django.http import FileResponse
 
 # from django.views.decorators.csrf import csrf_exempt
 # Create your views here.
@@ -479,3 +480,13 @@ def add_comment(request):
         photo=photo
    )    
     return Response({"message":"Comment added successfully"},status=200)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def download_photo(request, photo_id):
+    photo = Photo.objects.get(id=photo_id)
+    photo.downloads += 1
+    photo.save()
+    file = photo.image.open('rb')
+    filename = f"photo_{photo.id}.jpg"
+    return FileResponse(file, as_attachment=True, filename=filename)
