@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 from decouple import config  
 from dotenv import load_dotenv
+from celery import Celery
 
 
 
@@ -31,7 +32,10 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 
+app = Celery("backend")
 
+app.config_from_object("django.conf:settings", namespace="CELERY")
+app.autodiscover_tasks()
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',

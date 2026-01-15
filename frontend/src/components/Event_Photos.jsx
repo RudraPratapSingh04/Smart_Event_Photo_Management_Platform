@@ -253,6 +253,26 @@ const loadCommentSection=async()=>{
       console.error("Error toggling like:", err);
     }
   };
+const handleDownload = () => {
+  const imageUrl = photos[imageSelected]?.image;
+  const imageId = photos[imageSelected]?.id;
+
+  if (!imageUrl) {
+    alert("Image not found");
+    return;
+  }
+
+  const link = document.createElement("a");
+  link.href = imageUrl;
+  link.download = `photo_${imageId}.jpg`;
+  link.rel = "noopener noreferrer";
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+
 
   const handleFavourite = async () => {
     const csrfToken = getCSRFToken();
@@ -611,14 +631,15 @@ const handleAddComment=async()=>{
                         setComment(e.target.value);
                       }}
                     />
-                    <button className="bg-green-200 p-2 rounded-xl font-bold"
+                    <button
+                      className="bg-green-200 p-2 rounded-xl font-bold"
                       onClick={() => {
-                        
-                          handleAddComment();
-                          document.getElementById("commentInput").value = "";
-                        
+                        handleAddComment();
+                        document.getElementById("commentInput").value = "";
                       }}
-                      > Add Comment
+                    >
+                      {" "}
+                      Add Comment
                     </button>
 
                     <div className="flex flex-col border-b pb-2 max-h-60 overflow-y-auto">
@@ -717,19 +738,23 @@ const handleAddComment=async()=>{
                 Add to Favourites
               </button>
             )}
+            
             <button
               onClick={() => {
-                const link = document.createElement("a");
-                link.href = photos[imageSelected]?.image;
-                link.download = `photo_${photos[imageSelected]?.id}.jpg`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                // const link = document.createElement("a");
+                // link.href = photos[imageSelected]?.image;
+                // link.download = `photo_${photos[imageSelected]?.id}.jpg`;
+                // link.target = "_self";
+                // document.body.appendChild(link);
+                // link.click();
+                // document.body.removeChild(link);
+                handleDownload();
               }}
               className="border-white p-2 bg-white text-red-400 rounded-xl"
             >
               Download
             </button>
+
             <button
               onClick={handleShowProperties}
               className="border-white p-2 bg-white text-red-400 rounded-xl"

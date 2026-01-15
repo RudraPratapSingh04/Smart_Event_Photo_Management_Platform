@@ -28,3 +28,8 @@ def process_photo(self, photo_id):
         photo.status = "failed"
         photo.save()
         raise
+
+@shared_task
+def test_task():
+    print("✅ Celery task executed")
+    return "done"
