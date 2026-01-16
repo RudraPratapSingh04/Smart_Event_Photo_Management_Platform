@@ -11,30 +11,13 @@ import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import Event_Photos from "./components/Event_Photos.jsx";
 import Favourite from "./components/Favourite.jsx";
 import TaggedImages from "./components/TaggedImages.jsx";
+import PhotographerCorner from "./components/PhotographerCorner.jsx";
 import {
   createBrowserRouter,
   Route,
   createRoutesFromElements,
   RouterProvider,
 } from "react-router-dom";
-
-// function ProtectedRoute({ children }) {
-//   const [loading, setLoading] = useState(true);
-//   const [auth, setAuth] = useState(false);
-
-//  useEffect(() => {
-//     fetch("http://127.0.0.1:8000/api/dashboard/", {
-//       credentials: "include",
-//     }).then((res) => {
-//       if (res.ok) setAuth(true);
-//       else setAuth(false);
-//       setLoading(false);
-//     });
-//   }, []);
-
-//   if (loading) return <div>Loading...</div>;
-//   return auth ? children : <Navigate to="/dashboard" />;
-// }
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -89,6 +72,14 @@ const router = createBrowserRouter(
           </ProtectedRoute>
         }
       ></Route>
+      <Route
+        path="/photographer_corner"
+        element={
+          <ProtectedRoute>
+            <PhotographerCorner />
+          </ProtectedRoute>
+        }
+      />
     </>
   )
 );

@@ -203,7 +203,34 @@ function Event_Photos() {
       ?.split("=")[1];
   };
 
-
+ const handleDownload = async () => {
+   const imageId = photos[imageSelected]?.id;
+   if (!imageId) {
+     alert("Image not found");
+     return;
+   }
+   try {
+     const response = await fetch(
+       `http://localhost:8000/api/download_photo/${imageId}/`,
+       { credentials: "include" }
+     );
+     if (!response.ok) {
+       alert("Failed to download image");
+       return;
+     }
+     const blob = await response.blob();
+     const url = window.URL.createObjectURL(blob);
+     const link = document.createElement("a");
+     link.href = url;
+     link.download = `photo_${imageId}.jpg`;
+     document.body.appendChild(link);
+     link.click();
+     link.remove();
+     window.URL.revokeObjectURL(url);
+   } catch (e) {
+     alert("Error downloading image");
+   }
+ };
 
   return (
     <>
@@ -292,12 +319,7 @@ function Event_Photos() {
             )}
             <button
               onClick={() => {
-                const link = document.createElement("a");
-                link.href = photos[imageSelected]?.image;
-                link.download = `photo_${photos[imageSelected]?.id}.jpg`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                handleDownload(photos[imageSelected]?.image);
               }}
               className="border-white p-2 bg-white text-red-400 rounded-xl"
             >
