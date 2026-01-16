@@ -36,6 +36,7 @@ function Event_Photos() {
   const [showCommentSection, setShowCommentSection] = useState(false);
   const [commentsData, setCommentsData] = useState([]);
   const [comment, setComment] = useState("");
+  const [dragActive,setDragActive] = useState(false);
   useEffect(() => {
     if (!isImageOpen || !photos[imageSelected]) {
       return;
@@ -133,6 +134,29 @@ function Event_Photos() {
       setTagging(false);
     }
   };
+
+const handleDrag=(e)=>{
+  e.preventDefault();
+  e.stopPropogation();
+  if (e.type === "dragenter" || e.type === "dragover") {
+    setDragActive(true);
+  } else if (e.type === "dragleave") {
+    setDragActive(false);
+  }
+};
+const handleDrop = (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  setDragActive(false);
+
+  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+    setSelectedPhotos(Array.from(e.dataTransfer.files));
+    e.dataTransfer.clearData();
+  }
+};
+
+
+
   const loadCommentSection = async () => {
     setShowCommentSection(true);
     const csrf = getCSRFToken();
@@ -460,16 +484,35 @@ function Event_Photos() {
       {showModal && (
         <div className="fixed inset-0 flex flex-col items-center justify-center bg-black bg-opacity-50">
           {/* <div className="bg-amber-300">Upload here</div> */}
-          <div className="bg-yellow-50 flex items-center justify-center w-3/4 p-5 rounded-xl h-1/2">
-            Drag and Drop area for photo upload
+          <div
+            onDragEnter={handleDrag}
+            onDragOver={handleDrag}
+            onDragLeave={handleDrag}
+            onDrop={handleDrop}
+            className={`flex items-center justify-center w-3/4 h-1/2 p-5 rounded-xl border-2 border-dashed transition
+    ${
+      dragActive
+        ? "bg-yellow-100 border-green-500"
+        : "bg-yellow-50 border-gray-300"
+    }
+  `}
+          >
+            <p className="text-gray-700 text-lg">Drag & Drop photos here</p>
           </div>
+
           <input
             type="file"
             multiple
             accept="image/*"
             id="photoInput"
             className="hidden"
-            onChange={(e) => setSelectedPhotos(e.target.files)}
+            onChange={(e) => {
+              setSelectedPhotos((prev) => [
+                ...prev,
+                ...Array.from(e.target.files),
+              ]);
+              e.target.value = null;
+            }}
           />
           <div className="text-white">
             {selectedPhotos.length} photos selected
