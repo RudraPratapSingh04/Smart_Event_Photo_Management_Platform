@@ -1,35 +1,69 @@
 from celery import shared_task
-from PIL import Image
-from django.core.files.base import ContentFile
+import piexif
+from django.core.files.storage import default_storage
 from .models import Photo
-import io
+import logging
 
-@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=5)
-def process_photo(self, photo_id):
+logger=logging.getLogger(__name__)
+
+def _rational_to_float(r):
+    return r[0] / r[1] if r and r[1] != 0 else None
+
+
+def _convert_gps(coord, ref):
+    if not coord or not ref:
+        return None
+
+    d = _rational_to_float(coord[0])
+    m = _rational_to_float(coord[1])
+    s = _rational_to_float(coord[2])
+
+    decimal = d + (m / 60.0) + (s / 3600.0)
+    if ref in [b"S", b"W"]:
+        decimal = -decimal
+
+    return round(decimal, 6)
+
+
+@shared_task(bind=True, autoretry_for=(Exception,), retry_kwargs={"max_retries": 3, "countdown": 5})
+def extract_exif_and_update(self, photo_id):
     photo = Photo.objects.get(id=photo_id)
 
-    try:
-        img = Image.open(photo.image)
+    photo.status = "processing"
+    photo.save(update_fields=["status"])
+    with default_storage.open(photo.image.name, "rb") as f:
+        image_bytes = f.read()
 
-        img.thumbnail((400, 400))
-        buffer = io.BytesIO()
-        img.save(buffer, format="JPEG")
-
-        photo.thumbnail.save(
-            f"thumb_{photo.id}.jpg",
-            ContentFile(buffer.getvalue()),
-            save=False
+    exif = piexif.load(image_bytes)
+    model = exif["0th"].get(piexif.ImageIFD.Model)
+    photo.camera_model = model.decode(errors="ignore") if model else None
+    fnumber = exif["Exif"].get(piexif.ExifIFD.FNumber)
+    if fnumber:
+        photo.aperture = f"f/{round(_rational_to_float(fnumber), 1)}"
+    exposure = exif["Exif"].get(piexif.ExifIFD.ExposureTime)
+    if exposure:
+        photo.shutter_speed = f"{exposure[0]}/{exposure[1]} sec"
+    gps = exif.get("GPS")
+    if gps:
+        lat = _convert_gps(
+            gps.get(piexif.GPSIFD.GPSLatitude),
+            gps.get(piexif.GPSIFD.GPSLatitudeRef),
         )
-        photo.watermarked = True
-        photo.status = "done"
-        photo.save()
+        lon = _convert_gps(
+            gps.get(piexif.GPSIFD.GPSLongitude),
+            gps.get(piexif.GPSIFD.GPSLongitudeRef),
+        )
+        if lat is not None and lon is not None:
+            photo.gps_Location = f"{lat}, {lon}"
+    photo.status = "done"
+    photo.save(
+        update_fields=[
+            "camera_model",
+            "aperture",
+            "shutter_speed",
+            "gps_Location",
+            "status",
+        ]
+    )
 
-    except Exception:
-        photo.status = "failed"
-        photo.save()
-        raise
-
-@shared_task
-def test_task():
-    print("✅ Celery task executed")
-    return "done"
+    return photo.id

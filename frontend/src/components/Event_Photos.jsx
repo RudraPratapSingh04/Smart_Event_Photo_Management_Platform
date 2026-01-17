@@ -36,7 +36,7 @@ function Event_Photos() {
   const [showCommentSection, setShowCommentSection] = useState(false);
   const [commentsData, setCommentsData] = useState([]);
   const [comment, setComment] = useState("");
-  const [dragActive,setDragActive] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
   useEffect(() => {
     if (!isImageOpen || !photos[imageSelected]) {
       return;
@@ -61,7 +61,7 @@ function Event_Photos() {
             body: JSON.stringify({
               photo_id: photos[imageSelected].id,
             }),
-          }
+          },
         );
         if (response.ok) {
           const data = await response.json();
@@ -96,7 +96,7 @@ function Event_Photos() {
     try {
       const res = await fetch(
         `http://localhost:8000/api/search_users/?q=${query}`,
-        { credentials: "include" }
+        { credentials: "include" },
       );
       const data = await res.json();
       setSearchResults(data);
@@ -135,27 +135,25 @@ function Event_Photos() {
     }
   };
 
-const handleDrag=(e)=>{
-  e.preventDefault();
-  e.stopPropogation();
-  if (e.type === "dragenter" || e.type === "dragover") {
-    setDragActive(true);
-  } else if (e.type === "dragleave") {
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     setDragActive(false);
-  }
-};
-const handleDrop = (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  setDragActive(false);
 
-  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-    setSelectedPhotos(Array.from(e.dataTransfer.files));
-    e.dataTransfer.clearData();
-  }
-};
-
-
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      setSelectedPhotos(Array.from(e.dataTransfer.files));
+      e.dataTransfer.clearData();
+    }
+  };
 
   const loadCommentSection = async () => {
     setShowCommentSection(true);
@@ -197,7 +195,7 @@ const handleDrop = (e) => {
           body: JSON.stringify({
             photo_id: photos[imageSelected].id,
           }),
-        }
+        },
       );
       if (response.ok) {
         const data = await response.json();
@@ -217,7 +215,7 @@ const handleDrop = (e) => {
         {
           method: "GET",
           credentials: "include",
-        }
+        },
       );
       if (response.ok) {
         console.log("Photos fetched successfully");
@@ -279,7 +277,7 @@ const handleDrop = (e) => {
     try {
       const response = await fetch(
         `http://localhost:8000/api/download_photo/${imageId}/`,
-        { credentials: "include" }
+        { credentials: "include" },
       );
       if (!response.ok) {
         alert("Failed to download image");
@@ -315,7 +313,7 @@ const handleDrop = (e) => {
             photo_id: photos[imageSelected].id,
             is_Favourite: isFavourite,
           }),
-        }
+        },
       );
       if (response.ok) {
         setIsFavourite(!isFavourite);
@@ -410,7 +408,7 @@ const handleDrop = (e) => {
           headers: {
             "Content-Type": "application/json",
           },
-        }
+        },
       );
       const data = await response.json();
       return data.is_photographer;
@@ -507,11 +505,12 @@ const handleDrop = (e) => {
             id="photoInput"
             className="hidden"
             onChange={(e) => {
-              setSelectedPhotos((prev) => [
-                ...prev,
-                ...Array.from(e.target.files),
-              ]);
-              e.target.value = null;
+              if (e.target.files && e.target.files.length > 0) {
+                setSelectedPhotos((prev) => [
+                  ...prev,
+                  ...Array.from(e.target.files),
+                ]);
+              }
             }}
           />
           <div className="text-white">

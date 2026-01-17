@@ -10,8 +10,6 @@ from django.contrib.auth import authenticate, login, logout
 from django.core.mail import send_mail
 from django.conf import settings
 from django.db.models import Q
-
-from myapp.tasks import process_photo
 from .models import OTPVerification,Event
 from rest_framework.permissions import IsAuthenticated,AllowAny
 from django.views.decorators.csrf import csrf_exempt
@@ -23,9 +21,18 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import Profile,Photo,Event,Like,Comment,Favourite,Tag
 from django.http import FileResponse
+from .tasks import extract_exif_and_update
+from django.http import JsonResponse
+from django.views.decorators.csrf import ensure_csrf_cookie
 
+from rest_framework.decorators import api_view, parser_classes
+from rest_framework.parsers import MultiPartParser, FormParser
 # from django.views.decorators.csrf import csrf_exempt
 # Create your views here.
+
+@ensure_csrf_cookie
+def set_csrf(request):
+    return JsonResponse({"detail": "CSRF cookie set"})
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def verify_login(request):
@@ -268,27 +275,63 @@ def event_photos(request,event_slug):
 
         
     
+# @api_view(['POST'])
+# def upload_photos(request):
+#     photos = request.FILES.getlist("photos")
+#     event_slug=request.data.get("event_slug")
+#     created_photos=[]
+#     if not photos:
+#         return Response({'error':"Some error occured"},status=400)
+#     for photo in photos:
+#         photo_obj=Photo.objects.create(
+#             uploader_id=request.user.profile,
+#             event=Event.objects.get(slug=event_slug),
+#             image=photo,
+#             status="uploaded"
+#         )
+#     created_photos.append(photo_obj.id)
+#     chain(
+#         extract_exif_and_update.s(photo_obj.id),
+        
+#     ).delay()
+#     return Response(
+#         {
+#             "message": "Uploaded",
+#             "photo_ids": created_photos
+#         },
+#         status=201
+#     )
+
+
 @api_view(['POST'])
+# @permission_classes([IsAuthenticated])
+# @parser_classes([MultiPartParser, FormParser])
 def upload_photos(request):
     photos = request.FILES.getlist("photos")
-    event_slug=request.data.get("event_slug")
+    event_slug = request.data.get("event_slug")
+
     if not photos:
-        return Response({'error':"Some error occured"},status=400)
+        return Response({"error": "No photos uploaded"}, status=400)
+    
+    if not event_slug:
+        return Response({"error": "Event slug is required"}, status=400)
+
+    try:
+        event = Event.objects.get(slug=event_slug)
+    except Event.DoesNotExist:
+        return Response({"error": "Event not found"}, status=404)
+
     for photo in photos:
-        Photo.objects.create(
+        photo_obj = Photo.objects.create(
             uploader_id=request.user.profile,
-            event=Event.objects.get(slug=event_slug),
+            event=event,
             image=photo,
-            status="uploaded"
+            status="processing"
         )
-        
-    return Response(
-        {
-            "message": "Uploaded",
-            
-        },
-        status=201
-    )
+        extract_exif_and_update.delay(photo_obj.id)
+
+    return Response({"message": "Uploaded"}, status=201)
+
 
 @api_view(['POST'])
 def photo_properties(request):
