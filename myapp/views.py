@@ -1,5 +1,6 @@
 from datetime import timedelta
 import random
+import logging
 from django.utils import timezone
 from django.shortcuts import render
 from rest_framework.decorators import api_view, permission_classes
@@ -82,30 +83,53 @@ def send_otp(request):
 
     if User.objects.filter(username__iexact=username).exists():
         return Response({'error': 'UsernameAlreadyTaken'}, status=status.HTTP_400_BAD_REQUEST)
-    print("SEND OTP API HIT")
-    otp=int(random.randint(100000,999999))
-    OTPVerification.objects.filter(email__iexact=email).delete()
-    print(f"OTP GENERATED {otp}")
-    # OTPVerification.objects.create(
-    #     user=User.objects.create_user(username=username,email=email,password=password),
-    #     otp_code=otp
-    # )
-    OTPVerification.objects.create(
-        email=email,
-        otp_code=otp,
-        valid_till=timezone.now() +timedelta(minutes=5)
-        
-    )
-    print(email)
+
     try:
-        print(otp)
+        otp = int(random.randint(100000, 999999))
+        OTPVerification.objects.filter(email__iexact=email).delete()
+        
+        OTPVerification.objects.create(
+            email=email,
+            otp_code=otp,
+            valid_till=timezone.now() + timedelta(minutes=5)
+        )
+        
+        subject = "Your OTP for PhotoGo Registration"
+        message = f"""
+Hello,
+
+Your OTP (One-Time Password) for registering on PhotoGo is:
+
+{otp}
+
+This OTP is valid for 5 minutes. Please do not share this with anyone.
+
+If you did not request this OTP, please ignore this email.
+
+Best regards,
+PhotoGo Team
+"""
+        
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [email],
+            fail_silently=False,
+        )
+        
+        return Response({
+            'message': 'OTP sent successfully to your email.',
+            'email': email
+        }, status=status.HTTP_200_OK)
+        
     except Exception as e:
-        print("failed to send otp kuchh karo",{e})
-        return Response({'error': 'Failed to send OTP email.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    return Response({
-        'message':'OTP sent successfully to your email.',
-    },status=status.HTTP_200_OK
-    )
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error sending OTP: {str(e)}")
+        return Response({
+            'error': 'Failed to send OTP. Please try again.'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+   
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def verify_otp(request):

@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Header from "./subcomponent/Header.jsx";
 import Footer from "./subcomponent/Footer.jsx";
-
+ 
 function Event_Photos() {
   const { event_slug } = useParams();
   const [photos, setPhotos] = useState([]);
@@ -37,6 +37,7 @@ function Event_Photos() {
   const [commentsData, setCommentsData] = useState([]);
   const [comment, setComment] = useState("");
   const [dragActive, setDragActive] = useState(false);
+  const [refresh, setRefresh] = useState(false);
   useEffect(() => {
     if (!isImageOpen || !photos[imageSelected]) {
       return;
@@ -75,6 +76,8 @@ function Event_Photos() {
           setGPSLocation(data.gps_location);
           setCameraModel(data.camera_model);
           setUploadDate(data.uploaded_at);
+          setRefresh(false);
+          
         } else {
           console.error("Failed to fetch photo properties");
         }
@@ -85,7 +88,7 @@ function Event_Photos() {
       }
     };
     fetchProperties();
-  }, [isImageOpen, imageSelected, isLiked]);
+  }, [isImageOpen, imageSelected, isLiked,refresh]);
 
   const searchUsers = async (query) => {
     if (!query) {
@@ -656,8 +659,32 @@ function Event_Photos() {
                         Comments Section
                       </h1>
                       <button
-                        onClick={() => {
+                        onClick={async () => {
                           setShowCommentSection(false);
+
+                          const csrfToken = getCSRFToken();
+                          try {
+                            const response = await fetch(
+                              "http://localhost:8000/api/photo_properties/",
+                              {
+                                method: "POST",
+                                credentials: "include",
+                                headers: {
+                                  "Content-Type": "application/json",
+                                  "X-CSRFToken": csrfToken,
+                                },
+                                body: JSON.stringify({
+                                  photo_id: photos[imageSelected].id,
+                                }),
+                              },
+                            );
+                            if (response.ok) {
+                              const data = await response.json();
+                              setCommentsCount(data.comments_count);
+                            }
+                          } catch (err) {
+                            console.error(err);
+                          }
                         }}
                         className="text-xl font-bold text-gray-600"
                       >
