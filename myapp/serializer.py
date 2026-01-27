@@ -11,6 +11,7 @@ class EventSerializer(serializers.ModelSerializer):
         source='event_cc.user.username',
         read_only=True
     )
+    has_upload_access = serializers.SerializerMethodField()
 
     class Meta:
         model = Event
@@ -22,7 +23,17 @@ class EventSerializer(serializers.ModelSerializer):
             'event_head_username',
             'event_cc_username',
             'member_only',
+            'has_upload_access',
         ]
+    def get_has_upload_access(self, event):
+        request = self.context.get('request')
+
+        if not request or not request.user.is_authenticated:
+            return False
+
+        return event.upload_access_users.filter(
+            id=request.user.id
+        ).exists()
 class EventPhotoSerializer(serializers.ModelSerializer):
     class Meta:
         model=Photo

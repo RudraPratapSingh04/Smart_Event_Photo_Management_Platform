@@ -10,6 +10,7 @@ urlpatterns = [
     path('api/check_auth/',views.check_auth,name='check_auth'),
     path('api/view_profile/',views.view_profile,name='view_profile'),
     path('api/view_events/',views.view_events,name='view_events'),
+    path('api/view_my_events/',views.view_my_events,name='view_my_events'),
     path('api/check_guest/',views.check_guest,name='check_guest'),
     path('api/addnew_event/',views.addnew_event,name='addnew_event'),  
     path('api/event_photos/<str:event_slug>/',views.event_photos,name='event_photos'), 
@@ -30,6 +31,9 @@ urlpatterns = [
     path('api/load_comments/',views.load_comments,name='load_comments'),
     path('api/add_comment/',views.add_comment,name='add_comment'),
     path('api/download_photo/<int:photo_id>/',views.download_photo,name='download_photo'),
+    path('api/delete_event/<int:event_id>/',views.delete_event,name='delete_event'),
+    path('api/get_event_photographers/<int:event_id>/',views.get_event_photographers,name='get_event_photographers'),
+    path('api/toggle_photographer_access/<int:event_id>/',views.toggle_photographer_access,name='toggle_photographer_access'),
     path("api/set-csrf/", views.set_csrf),
 
     

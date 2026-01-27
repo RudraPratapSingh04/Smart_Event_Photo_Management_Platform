@@ -41,15 +41,24 @@ class  Location(models.Model):
     def __str__(self):
         return self.name
 class Event(models.Model):
-      title=models.CharField(max_length=100)
-      slug=models.SlugField(unique=True,null=True)
-      event_date=models.DateTimeField(default=timezone.now)
-      event_head=models.ForeignKey(Profile,on_delete=models.PROTECT,related_name='event_head_id')
-      event_cc=models.ForeignKey(Profile,on_delete=models.PROTECT,related_name='event_cc_id',null=True,blank=True)
-      member_only=models.BooleanField(default=False)
-      def __str__(self):
+    title = models.CharField(max_length=100)
+    slug = models.SlugField(unique=True, null=True)
+    event_date = models.DateTimeField(default=timezone.now)
+    event_head = models.ForeignKey(Profile, on_delete=models.PROTECT, related_name='event_head_id')
+    event_cc = models.ForeignKey(Profile, on_delete=models.PROTECT, related_name='event_cc_id', null=True, blank=True)
+    member_only = models.BooleanField(default=False)
+    upload_access_users = models.ManyToManyField(
+        User,
+        blank=True,
+        related_name='upload_access_users'
+    )
+
+    def __str__(self):
         return self.title
-      def save(self, *args, **kwargs):
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+
         if not self.slug:
             base_slug = slugify(self.title)
             slug = base_slug
@@ -58,8 +67,13 @@ class Event(models.Model):
                 slug = f"{base_slug}-{count}"
                 count += 1
             self.slug = slug
+
         super().save(*args, **kwargs)
 
+        if is_new:
+            self.upload_access_users.add(self.event_head.user)
+            if self.event_cc:
+                self.upload_access_users.add(self.event_cc.user)
 
 class Photo(models.Model):
       uploader_id=models.ForeignKey(Profile,on_delete=models.PROTECT)

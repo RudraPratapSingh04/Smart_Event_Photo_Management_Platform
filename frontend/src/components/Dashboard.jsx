@@ -6,7 +6,6 @@ function Dashboard() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [isPhotographer, setIsPhotographer] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -29,18 +28,8 @@ function Dashboard() {
 
         const userData = await response.json();
         setUser(userData);
-        const roleRes = await fetch(
-          "http://localhost:8000/api/check_photographer/",
-          {
-            method: "GET",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-          }
-        );
-        if (roleRes.ok) {
-          const roleData = await roleRes.json();
-          setIsPhotographer(Boolean(roleData.is_photographer));
-        }
+       
+        
       } catch (err) {
         setError(err.message);
         navigate("/", { replace: true });
@@ -99,14 +88,14 @@ function Dashboard() {
             >
               View Tagged Images
             </button>
-            {isPhotographer && (
+            
               <button
                 onClick={() => navigate("/photographer_corner")}
                 className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
               >
                 Photographer's Corner
               </button>
-            )}
+            
           </div>
         </div>
       </div>

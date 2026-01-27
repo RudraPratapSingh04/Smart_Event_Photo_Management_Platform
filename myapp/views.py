@@ -1,3 +1,4 @@
+from asyncio import events
 from datetime import timedelta
 import random
 import logging
@@ -201,9 +202,16 @@ def view_events(request):
     user=request.user
     is_guest=user.groups.filter(name="Guest").exists()
     events=Event.objects.all().order_by('-event_date')
+    events = Event.objects.exclude(event_head__user=user)
     if is_guest:
         events=events.filter(member_only=False)
-    serializer=EventSerializer(events,many=True)
+    serializer=EventSerializer(events,many=True, context={'request': request})
+    return Response(serializer.data,status=200)
+@api_view(['GET'])
+def view_my_events(request):
+    user=request.user
+    events=Event.objects.filter(event_head__user=user).order_by('-event_date')
+    serializer=EventSerializer(events,many=True, context={'request': request})
     return Response(serializer.data,status=200)
 
 @api_view(['POST'])
@@ -229,7 +237,21 @@ def create_event(request):
         event_cc_id=event_cc.id,
         member_only=member_only
     )
-
+@api_view(['DELETE'])
+def delete_event(request,event_id):
+    user=request.user
+    try:
+        event=Event.objects.get(id=event_id)
+    except Event.DoesNotExist:
+        return Response({"error":"Event not found"},status=404)
+    if event.event_head.user!=user:
+        return Response({"error":"You are not authorized to delete this event"},status=403)
+    photos=Photo.objects.filter(event=event)
+    for photo in photos:
+        # photo.image.delete(save=False)
+        photo.delete()
+    event.delete()
+    return Response({"message":"Event deleted successfully"},status=200)
 @api_view(['GET'])
 def check_guest(request):
     user=request.user
@@ -557,3 +579,54 @@ def download_photo(request, photo_id):
     file = photo.image.open('rb')
     filename = f"photo_{photo.id}.jpg"
     return FileResponse(file, as_attachment=True, filename=filename)
+
+@api_view(['GET'])
+def get_event_photographers(request, event_id):
+    try:
+        event = Event.objects.get(id=event_id)
+        if request.user != event.event_head.user:
+            return Response({"error": "Not allowed"}, status=403)
+        
+        all_users = User.objects.all().exclude(id=request.user.id)
+        upload_access_user_ids = set(event.upload_access_users.values_list('id', flat=True))
+        
+        users_data = [
+            {
+                "id": user.id,
+                "username": user.username,
+                "has_access": user.id in upload_access_user_ids
+            }
+            for user in all_users
+        ]
+        
+        return Response({"users": users_data})
+    except Event.DoesNotExist:
+        return Response({"error": "Event not found"}, status=404)
+
+@api_view(['POST'])
+def toggle_photographer_access(request, event_id):
+    user_id = request.data.get("user_id")
+    grant_access = request.data.get("grant_access")
+
+    try:
+        event = Event.objects.get(id=event_id)
+
+        if request.user != event.event_head.user:
+            return Response({"error": "Not allowed"}, status=403)
+
+        user = User.objects.get(id=user_id)
+        
+        if grant_access:
+            event.upload_access_users.add(user)
+        else:
+            event_cc_user = event.event_cc.user if event.event_cc else None
+            if user != event.event_head.user and user != event_cc_user:
+                event.upload_access_users.remove(user)
+            else:
+                return Response({"error": "Cannot remove event head or cc"}, status=400)
+
+        return Response({"message": "Access updated"})
+    except User.DoesNotExist:
+        return Response({"error": "User not found"}, status=404)
+    except Event.DoesNotExist:
+        return Response({"error": "Event not found"}, status=404)
