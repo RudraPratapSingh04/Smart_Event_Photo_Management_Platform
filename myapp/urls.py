@@ -14,7 +14,7 @@ urlpatterns = [
     path('api/check_guest/',views.check_guest,name='check_guest'),
     path('api/addnew_event/',views.addnew_event,name='addnew_event'),  
     path('api/event_photos/<str:event_slug>/',views.event_photos,name='event_photos'), 
-    path('api/check_photographer/',views.check_photographer,name='check_photographer'),
+    path('api/check_photographer/<str:event_slug>/',views.check_photographer,name='check_photographer'),
     path('api/upload_photos/',views.upload_photos,name='upload_photos'),
     path('api/photo_properties/',views.photo_properties,name='photo_properties'),
     path('api/toggle_like/',views.toggle_like,name='toggle_like'),
@@ -35,6 +35,7 @@ urlpatterns = [
     path('api/get_event_photographers/<int:event_id>/',views.get_event_photographers,name='get_event_photographers'),
     path('api/toggle_photographer_access/<int:event_id>/',views.toggle_photographer_access,name='toggle_photographer_access'),
     path("api/set-csrf/", views.set_csrf),
+    path('api/delete_photos/<str:event_slug>/',views.delete_photos,name='delete_photos'),
 
     
 ]

@@ -11,6 +11,8 @@ function Event_Photos() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [uploadPhotoError, setUploadPhotoError] = useState("");
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedPhotoIds, setSelectedPhotoIds] = useState([]);
   const [selectedPhotos, setSelectedPhotos] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [imageSelected, setImageSelected] = useState(0);
@@ -38,6 +40,8 @@ function Event_Photos() {
   const [comment, setComment] = useState("");
   const [dragActive, setDragActive] = useState(false);
   const [refresh, setRefresh] = useState(false);
+  const [photoForDeletion, setPhotoForDeletion] = useState([]);
+  const [deletePhotoError, setDeletePhotoError] = useState("");
   useEffect(() => {
     if (!isImageOpen || !photos[imageSelected]) {
       return;
@@ -239,6 +243,7 @@ function Event_Photos() {
   useEffect(() => {
     fetchPhotos();
   }, [event_slug]);
+
   if (loading) {
     return (
       <div
@@ -333,23 +338,38 @@ function Event_Photos() {
     photos.length > 0 ? (
       <div className="p-4 overflow-x-auto">
         <div className=" grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 border gap-4 border-gray-300">
-          {photos.map((photo, index) => (
-            <div
-              key={photo.id}
-              onClick={() => {
-                setImageSelected(index);
-
-                setIsImageOpen(true);
-              }}
-              //   className="border border-gray-300 flex items-center justify-center p-2"
-            >
-              <img
-                src={photo.image}
-                alt="Event"
-                className="w-full h-40 object-cover"
-              />
-            </div>
-          ))}
+          {photos.map((photo, index) => {
+            const isSelected = selectedPhotoIds.includes(photo.id);
+            return (
+              <div
+                key={photo.id}
+                className="relative"
+                onClick={() => {
+                  if (selectMode) {
+                    setSelectedPhotoIds((prev) =>
+                      prev.includes(photo.id)
+                        ? prev.filter((id) => id !== photo.id)
+                        : [...prev, photo.id]
+                    );
+                  } else {
+                    setImageSelected(index);
+                    setIsImageOpen(true);
+                  }
+                }}
+              >
+                <img
+                  src={photo.image}
+                  alt="Event"
+                  className={`w-full h-40 object-cover ${isSelected ? "opacity-80" : ""}`}
+                />
+                {selectMode && (
+                  <span className={`absolute top-2 right-2 px-2 py-1 square rounded text-white text-sm ${isSelected ? "bg-green-400" : "bg-gray-600"}`}>
+                    {isSelected ? "" : ""}
+                  </span>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     ) : (
@@ -404,7 +424,7 @@ function Event_Photos() {
   const check_photographer = async () => {
     try {
       const response = await fetch(
-        "http://localhost:8000/api/check_photographer/",
+        `http://localhost:8000/api/check_photographer/${event_slug}/`,
         {
           method: "GET",
           credentials: "include",
@@ -443,14 +463,59 @@ function Event_Photos() {
       console.error("Error adding comment:", error);
     }
   };
+  const deletePhoto = async()=>{
+    setUploadPhotoError("");
+    if(selectedPhotoIds.length===0){
+      setDeletePhotoError("No photos selected for deletion")
+      return;
+  }
+  
+    const csrfToken = getCSRFToken();
+    try{
+      const response=await fetch(`http://localhost:8000/api/delete_photos/${event_slug}/`,{
+
+        method:"DELETE",
+        credentials:"include",
+        headers:{
+          "Content-Type":"application/json",
+          "X-CSRFToken":csrfToken,
+        },
+        body:JSON.stringify({
+          photo_ids:selectedPhotoIds,
+          event_slug:event_slug,
+        }),
+      });
+      if(response.ok){
+        setSelectedPhotoIds([]);
+        setSelectMode(false);
+        await fetchPhotos();
+      }else{
+        setDeletePhotoError("You do not have access to delete these images");
+       
+      }
+    } catch (error) {
+      setDeletePhotoError("Error deleting photos.");
+      console.error("Error deleting photos:", error);
+    } finally {
+      setSelectMode(false);
+      setSelectedPhotoIds([]);
+      // setDeletePhotoError("");
+    }
+}
   const uploadPhoto = async () => {
     setUploadPhotoError("");
-    let is_photographer = await check_photographer();
+    let is_photographer = await check_photographer({event_slug});
     if (!is_photographer) {
       setUploadPhotoError("You do not have permission to upload photos.");
       return;
     }
     setShowModal(true);
+  };
+
+  const toggleSelectMode = () => {
+    setSelectMode(!selectMode);
+    setDeletePhotoError("");
+    setSelectedPhotoIds([]);
   };
 
   return (
@@ -464,9 +529,24 @@ function Event_Photos() {
         >
           Upload Photos
         </button>
+        <button
+          onClick={toggleSelectMode}
+          className={`p-2 bold text-xl text-white ${selectMode ? "bg-blue-700" : "bg-blue-500"}`}
+        >
+          {selectMode ? "Cancel Selection" : "Select Photos"}
+        </button>
+        <button
+          onClick={deletePhoto}
+          className="bg-red-600 p-2 bold text-xl text-white"
+        >
+          Delete Photos
+        </button>
 
         {uploadPhotoError && (
           <div className="text-red-500 mt-2">{uploadPhotoError}</div>
+        )}
+        {deletePhotoError && (
+          <div className="text-red-500 mt-2">{deletePhotoError}</div>
         )}
       </div>
       {displayEventPhotos && displayEventPhotos ? (
@@ -849,4 +929,6 @@ function Event_Photos() {
   );
 }
 
+
 export default Event_Photos;
+

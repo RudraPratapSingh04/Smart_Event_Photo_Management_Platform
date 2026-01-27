@@ -258,9 +258,10 @@ def check_guest(request):
     is_guest=user.groups.filter(name="Guest").exists()
     return Response({"is_guest":is_guest},status=200)
 @api_view(['GET'])
-def check_photographer(request):
+def check_photographer(request, event_slug):
     user=request.user
-    is_photographer=user.groups.filter(name="Photographer").exists()
+    event = Event.objects.get(slug=event_slug)
+    is_photographer = event.upload_access_users.filter(id=user.id).exists() or event.event_head.user==user
     return Response({"is_photographer":is_photographer},status=200)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -319,35 +320,6 @@ def event_photos(request,event_slug):
     serializer=EventPhotoSerializer(photos,many=True)
     return Response(serializer.data,status=200)
 
-        
-    
-# @api_view(['POST'])
-# def upload_photos(request):
-#     photos = request.FILES.getlist("photos")
-#     event_slug=request.data.get("event_slug")
-#     created_photos=[]
-#     if not photos:
-#         return Response({'error':"Some error occured"},status=400)
-#     for photo in photos:
-#         photo_obj=Photo.objects.create(
-#             uploader_id=request.user.profile,
-#             event=Event.objects.get(slug=event_slug),
-#             image=photo,
-#             status="uploaded"
-#         )
-#     created_photos.append(photo_obj.id)
-#     chain(
-#         extract_exif_and_update.s(photo_obj.id),
-        
-#     ).delay()
-#     return Response(
-#         {
-#             "message": "Uploaded",
-#             "photo_ids": created_photos
-#         },
-#         status=201
-#     )
-
 
 @api_view(['POST'])
 # @permission_classes([IsAuthenticated])
@@ -377,6 +349,33 @@ def upload_photos(request):
         extract_exif_and_update.delay(photo_obj.id)
 
     return Response({"message": "Uploaded"}, status=201)
+@api_view(['DELETE'])
+def delete_photos(request,event_slug):
+    user=request.user
+    photo_ids=request.data.get("photo_ids",[])
+    if not photo_ids:
+        return Response({"error":"No photos selected for deletion"},status=400)
+    event=Event.objects.get(slug=event_slug)
+    if event.event_head.user==user:
+        for photo_id in photo_ids:
+            try:
+                photo=Photo.objects.get(id=photo_id,event=event)
+                photo.delete()
+            except Photo.DoesNotExist:
+                continue
+        return Response({"message":"Selected photos deleted successfully"},status=200)
+    elif event.upload_access_users.filter(id=user.id).exists():
+        for photo_id in photo_ids:
+            try:
+                photo=Photo.objects.get(id=photo_id,event=event)
+                if photo.uploader_id.user!=user:
+                    continue
+                else:
+                 photo.delete()
+            except Photo.DoesNotExist:
+                continue
+        return Response({"message":"Selected photos deleted successfully"},status=200)
+
 
 
 @api_view(['POST'])
