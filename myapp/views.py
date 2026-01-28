@@ -2,12 +2,19 @@ from asyncio import events
 from datetime import timedelta
 import random
 import logging
+import secrets
+import requests
 from django.utils import timezone
+from django.shortcuts import redirect
+from rest_framework.views import APIView
 from django.shortcuts import render
+from rest_framework.authtoken.models import Token
+from .omniport import get_omniport_user
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.models import User
+from rest_framework.exceptions import ValidationError
 from django.contrib.auth import authenticate, login, logout
 from django.core.mail import send_mail
 from django.conf import settings
@@ -26,9 +33,11 @@ from django.http import FileResponse
 from .tasks import extract_exif_and_update
 from django.http import JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
-
+from django.forms import ValidationError
+from urllib.parse import urlencode
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser
+from django.contrib.auth.models import Group
 # from django.views.decorators.csrf import csrf_exempt
 # Create your views here.
 
@@ -629,3 +638,126 @@ def toggle_photographer_access(request, event_id):
         return Response({"error": "User not found"}, status=404)
     except Event.DoesNotExist:
         return Response({"error": "Event not found"}, status=404)
+class OmniportLoginStartView(APIView):
+    permission_classes = []
+    def get(self,request):
+        base = settings.OMNIPORT_BASE_URL
+        client_id = settings.OMNIPORT_CLIENT_ID
+        redirect_uri = settings.OMNIPORT_REDIRECT_URI
+        if not (base and client_id and redirect_uri):
+            return Response(
+                {"detail": "Omniport OAuth is not configured."},
+                status=400,
+            )
+        state = secrets.token_urlsafe(16)
+        request.session["omniport_oauth_state"] = state
+        authorize_url = f"{base}/oauth/authorise/"
+        params = {
+            "client_id": client_id,
+            "redirect_uri": redirect_uri,
+            "response_type": "code", 
+            "state": state,
+        }
+        return Response({
+            "authorization_url": f"{authorize_url}?{urlencode(params)}"
+        })
+
+class OmniportCallbackView(APIView):
+    permission_classes = []
+    def get(self,request):
+        code = request.query_params.get("code")
+        state = request.query_params.get("state")
+        expected_state = request.session.get("omniport_oauth_state")
+        if not code or (expected_state and state != expected_state):
+            raise ValidationError("Invalid Omniport callback")
+        try:
+            token_resp = requests.post(
+                f"{settings.OMNIPORT_BASE_URL}/open_auth/token/",
+                data={
+                    "client_id": settings.OMNIPORT_CLIENT_ID,
+                    "client_secret": settings.OMNIPORT_CLIENT_SECRET,
+                    "grant_type": "authorization_code",
+                    "redirect_uri": settings.OMNIPORT_REDIRECT_URI,
+                    "code": code,
+                },
+                timeout=10,
+            )
+            token_resp.raise_for_status()
+            access_token = token_resp.json().get("access_token")
+        except Exception:
+            raise ValidationError("Failed to obtain Omniport access token")
+        if not access_token:
+            raise ValidationError("Omniport did not return access token")
+        data = get_omniport_user(access_token)
+        omniport_id = str(data.get("userId") or data.get("id"))
+        email = (
+            data.get("contactInformation", {})
+                .get("instituteWebmailAddress")
+        )
+        if not email:
+            raise ValidationError("Omniport did not return institute email")
+        user_name = (
+            data.get("person", {})
+                .get("shortName")
+            or email.split("@")[0]
+        )
+        roles = data.get("person", {}).get("roles", [])
+        batch = data.get("student", {}).get("currentYear")
+        department = (
+            data.get("student", {})
+                .get("branch", {})
+                .get("department", {})
+                .get("name")
+        )
+        user, created = User.objects.get_or_create(
+            username=user_name,
+            defaults={
+                "email": email,
+                "is_active": True,
+            },
+        )
+        if not created and user.email != email:
+            user.email = email
+            user.save()
+        
+        profile, profile_created = Profile.objects.get_or_create(
+            user=user,
+            defaults={
+                "oauth_User_Id": omniport_id,
+                "dept_info": department or "",
+                "batch": batch or "",
+            },
+        )
+        if not profile_created:
+            updated = False
+            if profile.oauth_User_Id != omniport_id:
+                profile.oauth_User_Id = omniport_id
+                updated = True
+            if department and profile.dept_info != department:
+                profile.dept_info = department
+                updated = True
+            if batch and profile.batch != batch:
+                profile.batch = batch
+                updated = True
+            if updated:
+                profile.save()
+        guest_group, _ = Group.objects.get_or_create(name="Guest")
+        member_group, _ = Group.objects.get_or_create(name="Member")
+        user.groups.clear()
+        is_maintainer = False
+        if roles:
+            if "Maintainer" in roles:
+                is_maintainer = True
+            elif any(isinstance(r, dict) and r.get("role") == "Maintainer" for r in roles):
+                is_maintainer = True
+
+            elif any(isinstance(r, dict) and "Maintainer" in str(r.get("role", "")) for r in roles):
+                is_maintainer = True
+        
+        if is_maintainer:
+            user.groups.add(member_group)
+        else:
+            user.groups.add(guest_group) 
+        login(request, user)
+        redirect_url = settings.FRONTEND_LOGIN_REDIRECT_URL
+        return redirect(redirect_url)

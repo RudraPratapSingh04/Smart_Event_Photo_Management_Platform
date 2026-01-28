@@ -162,7 +162,7 @@ function Profile() {
                   <span className="font-medium">{profileData.department}</span>
                 </div>
                 <div className="flex justify-between items-center border rounded-lg p-3">
-                  <span className="text-gray-500">Batch</span>
+                  <span className="text-gray-500">Batch/Year</span>
                   <span className="font-medium">{profileData.batch}</span>
                 </div>
 

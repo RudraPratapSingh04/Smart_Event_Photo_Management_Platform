@@ -70,6 +70,24 @@ function Welcome() {
     }
     console.log("Login successful");
   };
+  const handleOAuthLogin = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/omniport/login/", {
+        method: "GET",
+        credentials: "include",
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        window.location.href = data.authorization_url;
+      } else {
+        setError("OAuth login is not configured");
+      }
+    } catch (err) {
+      setError("Failed to initiate OAuth login");
+      console.error("OAuth error:", err);
+    }
+  };
   return (
     <div className="min-h-screen flex items-center justify-center bg-indigo-600">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
@@ -121,12 +139,12 @@ function Welcome() {
           </Link>
         </p>
         <p className="mt-6 text-center text-sm text-gray-600">
-          <Link
-            to="/register"
+          <button
+            onClick={handleOAuthLogin}
             className="font-medium text-indigo-600 hover:underline"
           >
-            AUTH LOGIN
-          </Link>
+            Login with Omniport
+          </button>
         </p>
       </div>
     </div>

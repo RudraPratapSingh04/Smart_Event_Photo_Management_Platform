@@ -36,6 +36,7 @@ urlpatterns = [
     path('api/toggle_photographer_access/<int:event_id>/',views.toggle_photographer_access,name='toggle_photographer_access'),
     path("api/set-csrf/", views.set_csrf),
     path('api/delete_photos/<str:event_slug>/',views.delete_photos,name='delete_photos'),
-
+    path("omniport/login/", views.OmniportLoginStartView.as_view(), name="auth-omniport-login"),
+    path("auth/omniport/callback/", views.OmniportCallbackView.as_view(), name="auth-omniport-callback"),
     
 ]

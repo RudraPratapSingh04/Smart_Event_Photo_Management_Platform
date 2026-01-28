@@ -203,3 +203,9 @@ CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_BACKEND = "django-db"
+
+OMNIPORT_CLIENT_ID = os.getenv("OMNIPORT_CLIENT_ID")
+OMNIPORT_CLIENT_SECRET = os.getenv("OMNIPORT_CLIENT_SECRET")
+OMNIPORT_REDIRECT_URI = "http://localhost:8000/auth/omniport/callback/"
+OMNIPORT_BASE_URL=os.getenv("OMNIPORT_BASE_URL", "").rstrip("/")
+FRONTEND_LOGIN_REDIRECT_URL = "http://localhost:5173/dashboard"
