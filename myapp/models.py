@@ -97,6 +97,7 @@ class Photo(models.Model):
       total_Views=models.IntegerField(default=0)
       downloads=models.IntegerField(default=0)
       uploaded_at=models.DateTimeField(auto_now_add=True)
+      ai_tags=models.JSONField(null=True,blank=True)
 
 class Watermark(models.Model):
        watermark_desc=models.CharField(max_length=100)

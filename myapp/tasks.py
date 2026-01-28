@@ -3,6 +3,10 @@ import piexif
 from django.core.files.storage import default_storage
 from .models import Photo
 import logging
+from io import BytesIO
+from .ml_tagging import predict_tags
+from PIL import Image
+
 
 logger=logging.getLogger(__name__)
 
@@ -31,30 +35,26 @@ def extract_exif_and_update(self, photo_id):
 
     photo.status = "processing"
     photo.save(update_fields=["status"])
-    with default_storage.open(photo.image.name, "rb") as f:
-        image_bytes = f.read()
+    image_bytes = photo.image.read()
 
     exif = piexif.load(image_bytes)
+
     model = exif["0th"].get(piexif.ImageIFD.Model)
-    photo.camera_model = model.decode(errors="ignore") if model else None
+    if model:
+        photo.camera_model = model.decode(errors="ignore")
+
     fnumber = exif["Exif"].get(piexif.ExifIFD.FNumber)
     if fnumber:
-        photo.aperture = f"f/{round(_rational_to_float(fnumber), 1)}"
+        photo.aperture = f"f/{round(fnumber[0] / fnumber[1], 1)}"
+
     exposure = exif["Exif"].get(piexif.ExifIFD.ExposureTime)
     if exposure:
         photo.shutter_speed = f"{exposure[0]}/{exposure[1]} sec"
-    gps = exif.get("GPS")
+
+    gps = exif.get("GPS", {})
     if gps:
-        lat = _convert_gps(
-            gps.get(piexif.GPSIFD.GPSLatitude),
-            gps.get(piexif.GPSIFD.GPSLatitudeRef),
-        )
-        lon = _convert_gps(
-            gps.get(piexif.GPSIFD.GPSLongitude),
-            gps.get(piexif.GPSIFD.GPSLongitudeRef),
-        )
-        if lat is not None and lon is not None:
-            photo.gps_Location = f"{lat}, {lon}"
+        photo.gps_Location = "GPS available"  # optional: convert later
+
     photo.status = "done"
     photo.save(
         update_fields=[
@@ -67,3 +67,15 @@ def extract_exif_and_update(self, photo_id):
     )
 
     return photo.id
+@shared_task(bind=True, autoretry_for=(Exception,), retry_kwargs={"max_retries": 2, "countdown": 10})
+def generate_ai_tags(self, photo_id):
+    photo = Photo.objects.get(id=photo_id)
+    with default_storage.open(photo.image.name, "rb") as f:
+        image_bytes = f.read()
+
+    image = Image.open(BytesIO(image_bytes)).convert("RGB")
+    tags = predict_tags(image)
+    photo.ai_tags = tags
+    photo.save(update_fields=["ai_tags"])
+    logger.info("Tags generated: %s", tags)
+    return tags

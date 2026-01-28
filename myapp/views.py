@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 from django.shortcuts import render
 from rest_framework.authtoken.models import Token
 from .omniport import get_omniport_user
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.models import User
@@ -30,7 +30,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import Profile,Photo,Event,Like,Comment,Favourite,Tag
 from django.http import FileResponse
-from .tasks import extract_exif_and_update
+from .tasks import extract_exif_and_update,generate_ai_tags
 from django.http import JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.forms import ValidationError
@@ -38,6 +38,7 @@ from urllib.parse import urlencode
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth.models import Group
+from celery import chain
 # from django.views.decorators.csrf import csrf_exempt
 # Create your views here.
 
@@ -46,6 +47,7 @@ def set_csrf(request):
     return JsonResponse({"detail": "CSRF cookie set"})
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@authentication_classes([])
 def verify_login(request):
     username=request.data.get("username")
     password=request.data.get("password")
@@ -355,7 +357,10 @@ def upload_photos(request):
             image=photo,
             status="processing"
         )
-        extract_exif_and_update.delay(photo_obj.id)
+        chain(
+    extract_exif_and_update.s(photo_obj.id),
+    generate_ai_tags.s(),
+).delay()
 
     return Response({"message": "Uploaded"}, status=201)
 @api_view(['DELETE'])
@@ -416,6 +421,7 @@ def photo_properties(request):
         "is_Liked":is_liked,
         "isFavourite":isFavourite,
         "uploaded_at":photo.uploaded_at,
+        "ai_tags":photo.ai_tags
         
     }
     return Response(data,status=200)
@@ -761,3 +767,22 @@ class OmniportCallbackView(APIView):
         login(request, user)
         redirect_url = settings.FRONTEND_LOGIN_REDIRECT_URL
         return redirect(redirect_url)
+    
+@api_view(['GET'])
+def search_event_photos(request,event_slug):
+    q = request.GET.get("q", "").strip()
+    if not q:
+        return Response([], status=200)
+
+    try:
+        event = Event.objects.get(slug=event_slug)
+    except Event.DoesNotExist:
+        return Response({"error": "Event not found"}, status=404)
+
+    photos = Photo.objects.filter(
+        Q(event=event) &
+        (Q(ai_tags__icontains=q) | Q(uploaded_at__icontains=q))
+    ).select_related("event", "uploader_id")[:25]
+
+    serializer = EventPhotoSerializer(photos, many=True)
+    return Response(serializer.data, status=200)

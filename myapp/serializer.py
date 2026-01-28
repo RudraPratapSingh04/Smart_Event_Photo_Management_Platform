@@ -37,4 +37,4 @@ class EventSerializer(serializers.ModelSerializer):
 class EventPhotoSerializer(serializers.ModelSerializer):
     class Meta:
         model=Photo
-        fields=['id','image','watermarked','camera_model','aperture','shutter_speed','gps_Location','total_Views','downloads','uploaded_at']
+        fields=['id','image','watermarked','camera_model','aperture','shutter_speed','gps_Location','total_Views','downloads','uploaded_at','ai_tags']

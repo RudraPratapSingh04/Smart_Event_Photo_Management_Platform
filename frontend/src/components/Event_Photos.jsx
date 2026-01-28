@@ -42,6 +42,9 @@ function Event_Photos() {
   const [refresh, setRefresh] = useState(false);
   const [photoForDeletion, setPhotoForDeletion] = useState([]);
   const [deletePhotoError, setDeletePhotoError] = useState("");
+  const [aiTags, setAiTags] = useState([])
+  const [showAiTags, setShowAiTags] = useState(false);
+  const [photoSearchQuery, setPhotoSearchQuery] = useState("");
   useEffect(() => {
     if (!isImageOpen || !photos[imageSelected]) {
       return;
@@ -49,6 +52,7 @@ function Event_Photos() {
     setShowCommentSection(false);
     setShowTagSection(false);
     setShowProperties(false);
+    setShowAiTags(false);
     const photo_id = photos[imageSelected].id;
     const fetchProperties = async () => {
       const csrfToken = getCSRFToken();
@@ -80,6 +84,7 @@ function Event_Photos() {
           setGPSLocation(data.gps_location);
           setCameraModel(data.camera_model);
           setUploadDate(data.uploaded_at);
+          setAiTags(data.ai_tags);
           setRefresh(false);
           
         } else {
@@ -439,6 +444,30 @@ function Event_Photos() {
       console.error("Error checking photographer status:", error);
     }
   };
+  const handlePhotoSearch=async(query)=>{
+    if (!query || query.trim() === "") {
+      fetchPhotos();
+      return;
+    }
+    try {
+      const response = await fetch(
+        `http://localhost:8000/api/search_event_photos/${event_slug}/?q=${query}`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+      const data = await response.json();
+      setPhotos(data);
+    } catch (error) {
+      console.error("Error searching photos:", error);
+    }
+  }
+
+
   const handleAddComment = async () => {
     if (comment.trim() === "") return;
     const csrf = getCSRFToken();
@@ -549,6 +578,16 @@ function Event_Photos() {
           <div className="text-red-500 mt-2">{deletePhotoError}</div>
         )}
       </div>
+      <search>
+    <input 
+    onChange={(e)=>{
+      setPhotoSearchQuery(e.target.value)
+      handlePhotoSearch(e.target.value)
+    }}
+    type="search"  className='' placeholder="Search photos with upload date or AI tags" />
+    
+  </search>
+      
       {displayEventPhotos && displayEventPhotos ? (
         displayEventPhotos
       ) : (
@@ -561,7 +600,7 @@ function Event_Photos() {
           </div>
         </div>
       )}
-
+  
       {showModal && (
         <div className="fixed inset-0 flex flex-col items-center justify-center bg-black bg-opacity-50">
           {/* <div className="bg-amber-300">Upload here</div> */}
@@ -844,6 +883,7 @@ function Event_Photos() {
           <div className="text-white">
             {likesCount} Likes {commentsCount} Comments{" "}
           </div>
+          {showAiTags && <div className="text-white"> {photos[imageSelected]?.ai_tags?.join(", ")}</div>}
           <div className=" gap-5 flex text-white mt-5 w-full justify-center max-w-6xl">
             {isLiked ? (
               <button
@@ -891,20 +931,15 @@ function Event_Photos() {
 
             <button
               onClick={() => {
-                // const link = document.createElement("a");
-                // link.href = photos[imageSelected]?.image;
-                // link.download = `photo_${photos[imageSelected]?.id}.jpg`;
-                // link.target = "_self";
-                // document.body.appendChild(link);
-                // link.click();
-                // document.body.removeChild(link);
                 handleDownload();
               }}
               className="border-white p-2 bg-white text-red-400 rounded-xl"
             >
               Download
             </button>
-
+              <button 
+              className="border-white p-2 bg-white text-red-400 rounded-xl"
+              onClick={() => setShowAiTags(!showAiTags)}>AI Tags</button>
             <button
               onClick={handleShowProperties}
               className="border-white p-2 bg-white text-red-400 rounded-xl"
