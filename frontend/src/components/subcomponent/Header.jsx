@@ -1,5 +1,6 @@
 import React from "react";
 import { Link,useNavigate } from "react-router-dom";
+import NotificationCenter from "../NotificationCenter.jsx";
 
 function Header() {
   const Navigate = useNavigate();
@@ -51,6 +52,7 @@ function Header() {
             PhotoGo
           </Link>
           <div>
+            <NotificationCenter />
             <button className="text-white text-xl bg-red-400 p-2 rounded-xl gap-2"
             onClick={viewProfile}>
               View Profile

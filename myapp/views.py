@@ -4,6 +4,8 @@ import random
 import logging
 import secrets
 import requests
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from django.utils import timezone
 from django.shortcuts import redirect
 from rest_framework.views import APIView
@@ -364,13 +366,14 @@ def upload_photos(request):
 
     return Response({"message": "Uploaded"}, status=201)
 @api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
 def delete_photos(request,event_slug):
     user=request.user
     photo_ids=request.data.get("photo_ids",[])
     if not photo_ids:
         return Response({"error":"No photos selected for deletion"},status=400)
     event=Event.objects.get(slug=event_slug)
-    if event.event_head.user==user:
+    if event.event_head==user.profile:
         for photo_id in photo_ids:
             try:
                 photo=Photo.objects.get(id=photo_id,event=event)
@@ -389,6 +392,8 @@ def delete_photos(request,event_slug):
             except Photo.DoesNotExist:
                 continue
         return Response({"message":"Selected photos deleted successfully"},status=200)
+    else:
+        return Response({"error":"You do not have access to delete these images"},status=403)
 
 
 
@@ -430,7 +435,10 @@ def toggle_like(request):
     photo_id=request.data.get("photo_id")
     profile=request.user.profile
     photo=Photo.objects.get(id=photo_id)
-    like_obj=Like.objects.filter(liked_by=profile, photo=photo).first()
+    like_obj=Like.objects.filter(liked_by=profile, photo=photo).first()    
+    channel_layer = get_channel_layer()
+    uploader = photo.uploader_id
+    
     if like_obj:
         like_obj.delete()
         return Response({"message":"Photo unliked"},status=200)
@@ -439,6 +447,27 @@ def toggle_like(request):
             liked_by=profile,
             photo=photo
         )
+    
+        notification_message = {
+            "type": "like",
+            "message": f"{profile.user.username} liked your photo in {photo.event.title}",
+            "liked_by": profile.user.username,
+            "event_name": photo.event.title,
+            "photo_id": photo.id,
+            "timestamp": str(timezone.now())
+        }
+        
+        try:
+            async_to_sync(channel_layer.group_send)(
+                f'notifications_{uploader.user.id}',
+                {
+                    'type': 'send_notification',
+                    'notification': notification_message
+                }
+            )
+        except Exception as e:
+            pass
+        
         return Response({"message":"Photo liked"},status=200)
     
 @api_view(['POST'])
@@ -510,6 +539,7 @@ def load_tagged_users(request):
     },status=200)
 
 @api_view(["POST"])
+@permission_classes([IsAuthenticated])
 def tagUser(request):
     photo = Photo.objects.get(id=request.data["photo_id"])
     user = User.objects.get(id=request.data["user_id"])
@@ -522,8 +552,59 @@ def tagUser(request):
         tagged_whom=user.profile,
         tagged_by=request.user.profile
     )
+    channel_layer=get_channel_layer()
+
+    # experiment code starts here
+    notification_message = {
+            "type": "tag",
+            "message": f"{request.user.username} tagged you in a photo in {photo.event.title}",
+            "tagged_by": request.user.username,
+            "event_name": photo.event.title,
+            "photo_id": photo.id,
+            "timestamp": str(timezone.now())
+        }
+        
+    try:
+        async_to_sync(channel_layer.group_send)(
+                f'notifications_{user.id}',
+                {
+                    'type': 'send_notification',
+                    'notification': notification_message
+                }
+            )
+    except Exception as e:
+        pass
 
     return Response({"success": True})
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def test_notification(request):
+    """Test endpoint to send a test notification to the current user"""
+    channel_layer = get_channel_layer()
+    user = request.user
+    
+    test_message = {
+        "type": "tag",
+        "message": f"This is a test notification",
+        "tagged_by": "System",
+        "event_name": "Test Event",
+        "photo_id": 0,
+        "timestamp": str(timezone.now())
+    }
+    
+    try:
+        async_to_sync(channel_layer.group_send)(
+            f'notifications_{user.id}',
+            {
+                'type': 'send_notification',
+                'notification': test_message
+            }
+        )
+        return Response({"success": True, "message": "Test notification sent"})
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)
+
 @api_view(["GET"])
 def search_users(request):
     q = request.GET.get("q", "")
@@ -556,6 +637,15 @@ def tagged_images(request):
         photos.add(photo.photo)
     serializer=EventPhotoSerializer([tag.photo for tag in tagged_images],many=True)
     return Response(serializer.data,status=200)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_uploaded_photos(request):
+    profile=request.user.profile
+    photos=Photo.objects.filter(uploader_id=profile).order_by("-uploaded_at")
+    serializer=EventPhotoSerializer(photos,many=True)
+    return Response(serializer.data,status=200)
+
 @api_view(['POST'])
 def load_comments(request):
     photo=Photo.objects.get(id=request.data.get("photo_id"))
