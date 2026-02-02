@@ -1,8 +1,6 @@
 import React from "react";
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import Header from "./subcomponent/Header.jsx";
-import Footer from "./subcomponent/Footer.jsx";
 
 function Event_Photos() {
   const { event_slug } = useParams();
@@ -322,7 +320,6 @@ const loadTagSection = async () => {
 
   return (
     <>
-      <Header />
       <div>
         <div></div>
       </div>
@@ -525,8 +522,6 @@ const loadTagSection = async () => {
           )}
         </div>
       )}
-
-      <Footer />
     </>
   );
 }

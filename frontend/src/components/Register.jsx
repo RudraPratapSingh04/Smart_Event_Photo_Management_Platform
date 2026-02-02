@@ -82,71 +82,102 @@ function Register() {
   
 };
    return (
-     <div className="min-h-screen flex items-center justify-center bg-indigo-600">
+     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-500 to-indigo-600 p-4">
        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
-         <h1 className="text-2xl font-bold text-center text-gray-800 mb-6">
-           Hey Champ,Welcome 📸
-         </h1>
+         <div className="text-center mb-8">
+           <div className="w-16 h-16 mx-auto mb-4 bg-purple-600 rounded-full flex items-center justify-center">
+             <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+             </svg>
+           </div>
+           <h1 className="text-3xl font-bold text-gray-800 mb-2">
+             Create Account
+           </h1>
+           <p className="text-gray-600">Join us and start sharing</p>
+         </div>
 
-         <form className="flex flex-col gap-4">
-           <input
-             type="email"
-             placeholder="Email"
-             disabled={disabled}
-             onChange={(e) => setEmail(e.target.value)}
-             className="rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600"
-           />
+         <form className="space-y-4">
+           <div>
+             <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+             <input
+               type="email"
+               placeholder="Enter your email"
+               disabled={disabled}
+               onChange={(e) => setEmail(e.target.value)}
+               className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition disabled:bg-gray-100 disabled:cursor-not-allowed"
+             />
+           </div>
 
-           <input
-             type="username"
-             placeholder="Create Username"
-             disabled={disabled}
-             onChange={(e) => setUsername(e.target.value)}
-             className="rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600"
-           />
-           <input
-             type="password"
-             disabled={disabled}
-             placeholder="Create Password"
-             onChange={(e) => setPassword(e.target.value)}
-             className="rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600"
-           />
+           <div>
+             <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+             <input
+               type="text"
+               placeholder="Choose a username"
+               disabled={disabled}
+               onChange={(e) => setUsername(e.target.value)}
+               className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition disabled:bg-gray-100 disabled:cursor-not-allowed"
+             />
+           </div>
+
+           <div>
+             <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+             <input
+               type="password"
+               disabled={disabled}
+               placeholder="Create a password"
+               onChange={(e) => setPassword(e.target.value)}
+               className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition disabled:bg-gray-100 disabled:cursor-not-allowed"
+             />
+           </div>
+
            {error && (
-             <p className="mt-6 text-center text-sm text-gray-600">{error}</p>
+             <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+               <p className="text-red-600 text-sm">{error}</p>
+             </div>
            )}
 
            <button
-             className="mt-2 rounded-lg bg-indigo-600 py-2 font-semibold text-white hover:bg-indigo-700 transition"
+             className="w-full py-3 rounded-lg bg-purple-600 font-semibold text-white hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
              onClick={send_otp}
+             disabled={disabled}
            >
              Send OTP
            </button>
-           </form>
-         <form className="flex flex-col gap-4">
-           {!error && showOTPInput && (
-             <input
-               type="password"
-               placeholder="Enter OTP"
-               onChange={(e) => setOTP(e.target.value)}
-               className="rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600 mt-4"
-             />
-           )}
-           {!error && showOTPInput && (
-             <button className="mt-2 rounded-lg bg-indigo-600 py-2 font-semibold text-white hover:bg-indigo-700 transition"
-             onClick={verify_otp}>
-               Submit OTP
-             </button>
-           )}
-             {errorOTP && (
-             <p className="mt-6 text-center text-sm text-gray-600">{errorOTP}</p>
-           )}
-            
-           
          </form>
-         <p className="mt-6 text-center text-sm text-gray-600">
-           Already Registered?{" "}
-           <Link to="/" className="font-medium text-indigo-600 hover:underline">
-             Login here
+
+         {!error && showOTPInput && (
+           <div className="mt-6 pt-6 border-t border-gray-200 space-y-4">
+             <div>
+               <label className="block text-sm font-medium text-gray-700 mb-1">Enter OTP</label>
+               <p className="text-xs text-gray-500 mb-2">Check your email for the verification code</p>
+               <input
+                 type="text"
+                 placeholder="6-digit code"
+                 onChange={(e) => setOTP(e.target.value)}
+                 className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition text-center text-lg tracking-widest"
+                 maxLength="6"
+               />
+             </div>
+
+             {errorOTP && (
+               <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                 <p className="text-red-600 text-sm">{errorOTP}</p>
+               </div>
+             )}
+
+             <button 
+               className="w-full py-3 rounded-lg bg-green-600 font-semibold text-white hover:bg-green-700 transition"
+               onClick={verify_otp}
+             >
+               Verify & Create Account
+             </button>
+           </div>
+         )}
+
+         <p className="mt-6 text-center text-gray-600">
+           Already have an account?{" "}
+           <Link to="/" className="font-semibold text-purple-600 hover:text-purple-700">
+             Sign in
            </Link>
          </p>
        </div>

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
-import Header from "./subcomponent/Header";
+import { useNavigate } from "react-router-dom";
 function Dashboard() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -60,46 +59,13 @@ function Dashboard() {
   }
 
   return (
-    <>
-      <Header />
-      <div className="min-h-screen bg-gray-100 p-8">
-        <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6">
-          <h1 className="text-3xl font-bold mb-4">
-            Welcome to Dashboard, {user?.username}!
-          </h1>
-          <p className="text-gray-600 mb-4">Email: {user?.email}</p>
-
-          <div className="flex flex-col gap-4 ">
-            <button
-              onClick={() => navigate("/events")}
-              className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
-            >
-              Load Events
-            </button>
-            <button
-              onClick={() => navigate("/favourite")}
-              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-            >
-              View Favourites
-            </button>
-            <button
-              onClick={() => navigate("/tagged_images")}
-              className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700"
-            >
-              View Tagged Images
-            </button>
-            
-              <button
-                onClick={() => navigate("/photographer_corner")}
-                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-              >
-                Photographer's Corner
-              </button>
-            
-          </div>
-        </div>
+    <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-6">
+      <h1 className="text-3xl font-bold mb-2">Welcome, {user?.username}!</h1>
+      <p className="text-gray-600 mb-4">{user?.email}</p>
+      <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+        <p className="text-gray-700">Use the tabs on the left to navigate through Events, Favourites, Tagged Images and Photographer's Corner.</p>
       </div>
-    </>
+    </div>
   );
 }
 

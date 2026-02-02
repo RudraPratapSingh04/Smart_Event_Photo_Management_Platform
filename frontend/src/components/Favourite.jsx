@@ -1,8 +1,6 @@
 import React from "react";
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import Header from "./subcomponent/Header.jsx";
-import Footer from "./subcomponent/Footer.jsx";
 
 function Event_Photos() {
   const { event_slug } = useParams();
@@ -234,7 +232,6 @@ function Event_Photos() {
 
   return (
     <>
-      <Header />
       <div>
         <div></div>
 
@@ -343,8 +340,6 @@ function Event_Photos() {
           )}
         </div>
       )}
-
-      <Footer />
     </>
   );
 }

@@ -1,5 +1,3 @@
-import Header from './subcomponent/Header.jsx'
-import Footer from './subcomponent/Footer.jsx'
 import React, { useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import { render } from 'react-dom';
@@ -152,49 +150,97 @@ const delete_event=async(event_id)=>{
   }
 };
 
-  const displayEventsData=EventsData && EventsData.map((event)=>(
-    <div key={event.id} className="border p-4 mb-4 w-full flex flex-col gap-2 rounded-lg shadow-md">
-      <div className='flex flex-row gap-2 justify-between items-center align-middle'>
-      <h2 className="text-xl font-bold mb-2">{event.title}
-        
-      </h2>
-{event.has_upload_access && (
-    <span className="text-green-600 text-sm font-semibold border border-green-500 px-2 py-1 rounded">
-      UPLOAD ACCESS
-    </span>
-  )}
-  </div>
-      <p>Coordinator  : {event.event_head_username}</p>
-      <p>Date : {event.event_date.slice(0, 10)}</p>
-      <p>Event Type : {event.member_only ? "Members Only" : "Public"}</p>
-      <button 
-      onClick={()=>view_event_photos(event.slug)}
-      className="bg-blue-600 p-2 text-white justify-center align-middle">View</button>
-    
-    </div>
-  ));
-  const displayMyEventsData=myEventsData && myEventsData.map((event)=>(
-    <div key={event.id} className="border p-4 mb-4 w-full flex flex-col gap-2 rounded-lg shadow-md">
-      <h2 className="text-xl font-bold mb-2">{event.title}</h2>
-      
-      <p>Date : {event.event_date.slice(0, 10)}</p>
-      <p>Event Type : {event.member_only ? "Members Only" : "Public"}</p>
-            <button 
-      onClick={()=>view_event_photos(event.slug)}
-      className="bg-blue-600 p-2 text-white justify-center align-middle">View</button>
-      <button 
-      onClick={()=>delete_event(event.id)}
-      className="bg-red-600 p-2 text-white justify-center align-middle">Delete Event</button>
-     <button
-  onClick={() => openAddPhotographerModal(event.id)}
-  className="bg-yellow-600 p-2 text-white"
->
-  Manage Photographer
-</button>
+const displayEventsData = EventsData && EventsData.map((event) => (
+  <div
+    key={event.id}
+   className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition p-4 max-w-sm w-full flex flex-col justify-between"
 
-    
+
+  >
+    <div>
+      <div className="flex justify-between items-start mb-2">
+        <h2 className="text-lg font-semibold text-gray-800">
+          {event.title}
+        </h2>
+
+        {event.has_upload_access && (
+          <span className="text-xs font-semibold text-green-700 bg-green-100 px-2 py-1 rounded-full">
+            Upload Access
+          </span>
+        )}
+      </div>
+
+      <p className="text-sm text-gray-500">
+        👤 Coordinator: {event.event_head_username}
+      </p>
+      <p className="text-sm text-gray-500">
+        📅 {event.event_date.slice(0, 10)}
+      </p>
+      <p className="text-sm text-gray-500">
+        🔒 {event.member_only ? "Members Only" : "Public"}
+      </p>
     </div>
-  ));
+
+    <button
+      onClick={() => view_event_photos(event.slug)}
+      className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg transition"
+    >
+      View Event Photos
+    </button>
+  </div>
+));
+
+const displayMyEventsData = myEventsData && myEventsData.map((event) => (
+  <div
+    key={event.id}
+   className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition p-4 max-w-sm w-full flex flex-col justify-between"
+
+
+  >
+    <div>
+      <h2 className="text-lg font-semibold text-gray-800 mb-1">
+        {event.title}
+      </h2>
+
+      <p className="text-sm text-gray-500">
+        📅 {event.event_date.slice(0, 10)}
+      </p>
+      <p className="text-sm text-gray-500">
+        🔒 {event.member_only ? "Members Only" : "Public"}
+      </p>
+    </div>
+
+   <div className="mt-4 space-y-2">
+
+  {/* Primary Action */}
+  <button
+    onClick={() => view_event_photos(event.slug)}
+    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg transition"
+  >
+    View Event Photos
+  </button>
+
+  {/* Secondary Actions */}
+  <div className="flex gap-2">
+    <button
+      onClick={() => openAddPhotographerModal(event.id)}
+      className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded-lg transition"
+    >
+      Upload Acc
+    </button>
+
+    <button
+      onClick={() => delete_event(event.id)}
+      className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg transition"
+    >
+      Delete
+    </button>
+  </div>
+
+</div>
+
+  </div>
+));
 useEffect(() => {
 
 const loadEvents=async()=>{
@@ -238,18 +284,62 @@ loadMyEvents();
 
   return (
     <>
-      <Header />
-      <div className="mx-auto justify-center p-4 items-center flex flex-col">
-        <div>Events Content</div>
-        <button onClick={createNewEvent} className="bg-red-400 p-4 mt-2 mb-2">
-          Create New Event
-        </button>
+    <div className="p-6">
+
+        <div className="w-full max-w-6xl flex justify-between items-center mb-6">
+  <div>
+    <h1 className="text-3xl font-bold text-gray-800">Events</h1>
+    <p className="text-gray-500 text-sm">
+      View, manage and upload event photos
+    </p>
+  </div>
+
+  <button
+    onClick={createNewEvent}
+    className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg shadow transition"
+  >
+    + Create Event
+  </button>
+</div>
         <div>
           {error && <p className="text-red-500 p-2 mt-0">{error}</p>}
-          <p>My co-ordinated events</p>
-          {myEventsData ? <>{displayMyEventsData}</> : <p></p>}
-          <p>All events</p>
-          {EventsData ? <>{displayEventsData}</> : <p></p>}
+         <div className="w-full max-w-6xl space-y-10">
+  <section>
+    <h2 className="text-xl font-semibold text-gray-800 mb-4">
+      My Coordinated Events
+    </h2>
+
+    {myEventsData?.length ? (
+     <div
+  className="grid gap-4"
+  style={{
+    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+  }}
+>
+
+
+        {displayMyEventsData}
+      </div>
+    ) : (
+      <p className="text-gray-400">You haven’t created any events yet.</p>
+    )}
+  </section>
+  <section>
+    <h2 className="text-xl font-semibold text-gray-800 mb-4">
+      All Events
+    </h2>
+
+    {EventsData?.length ? (
+     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+        {displayEventsData}
+      </div>
+    ) : (
+      <p className="text-gray-400">No events available.</p>
+    )}
+  </section>
+
+</div>
         </div>
       </div>
       {showModal && (
@@ -337,7 +427,7 @@ loadMyEvents();
                       onChange={() => togglePhotographerAccess(user.id, user.has_access)}
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                   </label>
                 </div>
               ))}
@@ -351,7 +441,6 @@ loadMyEvents();
           </div>
         </div>
       )}
-      <Footer />
     </>
   );
 }

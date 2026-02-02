@@ -5,6 +5,7 @@ import { Navigate } from "react-router-dom";
 import Welcome from "./components/Welcome.jsx";
 import Register from "./components/Register.jsx";
 import Dashboard from "./components/Dashboard.jsx";
+import DashboardLayout from "./components/DashboardLayout.jsx";
 import Profile from "./components/Profile.jsx";
 import Events from "./components/Events.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -28,10 +29,16 @@ const router = createBrowserRouter(
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <Dashboard />
+            <DashboardLayout />
           </ProtectedRoute>
         }
-      />
+      >
+        <Route index element={<Dashboard />} />
+        <Route path="events" element={<Events />} />
+        <Route path="favourite" element={<Favourite />} />
+        <Route path="tagged_images" element={<TaggedImages />} />
+        <Route path="photographer_corner" element={<PhotographerCorner />} />
+      </Route>
       <Route
         path="/profile"
         element={
@@ -44,7 +51,7 @@ const router = createBrowserRouter(
         path="/events"
         element={
           <ProtectedRoute>
-            <Events />
+            <Navigate to="/dashboard/events" replace />
           </ProtectedRoute>
         }
       />
@@ -52,7 +59,7 @@ const router = createBrowserRouter(
         path="/favourite"
         element={
           <ProtectedRoute>
-            <Favourite />
+            <Navigate to="/dashboard/favourite" replace />
           </ProtectedRoute>
         }
       />
@@ -60,7 +67,7 @@ const router = createBrowserRouter(
         path="/tagged_images"
         element={
           <ProtectedRoute>
-            <TaggedImages />
+            <Navigate to="/dashboard/tagged_images" replace />
           </ProtectedRoute>
         }
       />
@@ -76,7 +83,7 @@ const router = createBrowserRouter(
         path="/photographer_corner"
         element={
           <ProtectedRoute>
-            <PhotographerCorner />
+            <Navigate to="/dashboard/photographer_corner" replace />
           </ProtectedRoute>
         }
       />
