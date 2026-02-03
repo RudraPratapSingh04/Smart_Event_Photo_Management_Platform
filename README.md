@@ -82,6 +82,11 @@ npm run dev
 - Interactions: `toggle_like`, `toggle_favourite`, `add_comment`, `tagUser` (with optional WebSocket notifications).
 - AI tags: background task that generates and stores `ai_tags` on the `Photo` model.
 
+## Watermarking
+- On upload, a background Celery task generates a watermarked JPEG containing the uploader's username and stores it.
+- Guests  receive the watermarked image when they download a photo; members and other users receive the original image.
+- Watermark generation is asynchronous (Celery) and non-blocking; if watermarking fails the upload still completes and the original image remains available.
+
 ## Real-time behavior
 
 Notifications are sent through Channels to per-user groups. The client connects via WebSocket to receive toast notifications and the notification list.

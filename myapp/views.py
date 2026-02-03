@@ -32,7 +32,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import Profile,Photo,Event,Like,Comment,Favourite,Tag
 from django.http import FileResponse
-from .tasks import extract_exif_and_update,generate_ai_tags
+from .tasks import extract_exif_and_update,generate_ai_tags,generate_watermarked_image
 from django.http import JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.forms import ValidationError
@@ -359,10 +359,12 @@ def upload_photos(request):
             image=photo,
             status="processing"
         )
+      
         chain(
-    extract_exif_and_update.s(photo_obj.id),
-    generate_ai_tags.s(),
-).delay()
+            extract_exif_and_update.s(photo_obj.id),
+            generate_ai_tags.s(),
+            generate_watermarked_image.s(),
+        ).delay()
 
     return Response({"message": "Uploaded"}, status=201)
 @api_view(['DELETE'])
@@ -691,7 +693,20 @@ def download_photo(request, photo_id):
     photo = Photo.objects.get(id=photo_id)
     photo.downloads += 1
     photo.save()
-    file = photo.image.open('rb')
+    user = request.user
+    is_guest = user.groups.filter(name="Guest").exists()
+    is_member = user.groups.filter(name="Member").exists()
+    target = None
+    if is_guest and not is_member and getattr(photo, 'watermarked_image', None):
+        target = photo.watermarked_image
+    else:
+        target = photo.image
+
+    try:
+        file = target.open('rb')
+    except Exception:
+        file = photo.image.open('rb')
+
     filename = f"photo_{photo.id}.jpg"
     return FileResponse(file, as_attachment=True, filename=filename)
 

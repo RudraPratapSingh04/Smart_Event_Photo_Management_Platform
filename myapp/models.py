@@ -79,6 +79,7 @@ class Photo(models.Model):
       uploader_id=models.ForeignKey(Profile,on_delete=models.PROTECT)
       event=models.ForeignKey(Event,on_delete=models.PROTECT)
       image=models.ImageField(upload_to='photos/originals')
+      watermarked_image=models.ImageField(upload_to='photos/watermarked/', null=True, blank=True)
       thumbnail=models.ImageField(upload_to='photos/thumbnails/',null=True,blank=True)
       status=models.CharField(
           max_length=20,
