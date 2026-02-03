@@ -169,7 +169,7 @@ const displayEventsData = EventsData && EventsData.map((event) => (
           </span>
         )}
       </div>
-
+        <div className="flex flex-col gap-2">
       <p className="text-sm text-gray-500">
         👤 Coordinator: {event.event_head_username}
       </p>
@@ -179,6 +179,7 @@ const displayEventsData = EventsData && EventsData.map((event) => (
       <p className="text-sm text-gray-500">
         🔒 {event.member_only ? "Members Only" : "Public"}
       </p>
+      </div>
     </div>
 
     <button
@@ -311,7 +312,7 @@ loadMyEvents();
 
     {myEventsData?.length ? (
      <div
-  className="grid gap-4"
+  className="grid gap-4 justify-items-start items-start"
   style={{
     gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
   }}

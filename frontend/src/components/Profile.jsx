@@ -1,8 +1,7 @@
 // import React from 'react'
 import Header from './subcomponent/Header.jsx'
-import Footer from './subcomponent/Footer.jsx'
 import React, { useEffect, useState } from "react";
-
+import SideBar from './subcomponent/Sidebar.jsx';
 function Profile() {
   const [profileData, setProfileData] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -99,80 +98,90 @@ function Profile() {
    setIsEditingBio(false);
    setBioDraft(profileData.bio || "");
  };
-  return (
-    <>
-      <Header />
-      <div className="min-h-screen bg-gray-100 py-8">
-        <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-md p-6">
-          <h2 className="text-2xl font-semibold mb-6 text-center">
+return (
+  <>
+    <Header />
+
+    <div className="flex">
+      <SideBar />
+     <main className="ml-64 flex-1 min-h-screen bg-gray-100 px-8 py-6">
+
+       <div className="max-w-4xl bg-white rounded-xl shadow-sm border p-6">
+
+          <h2 className="text-2xl font-semibold mb-6">
             My Profile
           </h2>
 
           {profileData && (
             <>
-              {/* Profile Image Section */}
-              <div className="flex flex-col items-center gap-3 mb-6">
+              <div className="flex flex-col items-center gap-4 mb-8">
                 <div className="relative">
                   <img
                     src={profileData.profile_picture || "/default-avatar.png"}
                     alt="Profile"
-                    className="w-32 h-32 rounded-full object-cover border-4 border-gray-200"
+                    className="w-32 h-32 rounded-full object-cover border"
                   />
                 </div>
 
-                <input
-                  type="file"
-                  accept="image/*"
-                  id="photoInput"
-                  className="hidden"
-                  onChange={(e) => updateProfilePicture(e.target.files[0])}
-                />
+                <div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    id="photoInput"
+                    className="hidden"
+                    onChange={(e) => updateProfilePicture(e.target.files[0])}
+                  />
 
-                <button
-                  onClick={() => document.getElementById("photoInput").click()}
-                  disabled={uploading}
-                  className="text-sm text-blue-600 hover:underline disabled:text-gray-400"
-                >
-                  {uploading ? "Uploading..." : "Change profile picture"}
-                </button>
+                  <button
+                    onClick={() => document.getElementById("photoInput").click()}
+                    disabled={uploading}
+                    className="text-sm text-indigo-600 hover:underline disabled:text-gray-400"
+                  >
+                    {uploading ? "Uploading..." : "Change profile picture"}
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-4">
+
                 <div className="flex items-center gap-4">
-                  <label className="w-28 text-gray-500">Username</label>
-                  <input
-                    className="flex-1 border rounded-lg p-2 bg-gray-100"
-                    type="text"
-                    disabled
-                    value={profileData.username}
-                  />
+                  <label className="w-28 text-gray-500">
+                    Username
+                  </label>
+                  <div className="flex-1 px-3 py-2 bg-gray-50 border rounded-lg text-gray-800">
+  {profileData.username}
+</div>
                 </div>
 
                 <div className="flex items-center gap-4">
                   <label className="w-28 text-gray-500">Email</label>
-                  <input
-                    className="flex-1 border rounded-lg p-2 bg-gray-100"
-                    type="text"
-                    disabled
-                    value={profileData.email}
-                  />
+                  <div className="flex-1 px-3 py-2 bg-gray-50 border rounded-lg text-gray-800">
+                    {profileData.email}
+                  </div>
                 </div>
+
+
                 <div className="flex justify-between items-center border rounded-lg p-3">
                   <span className="text-gray-500">Department</span>
-                  <span className="font-medium">{profileData.department}</span>
+                  <span className="font-medium">
+                    {profileData.department}
+                  </span>
                 </div>
+
                 <div className="flex justify-between items-center border rounded-lg p-3">
-                  <span className="text-gray-500">Batch/Year</span>
-                  <span className="font-medium">{profileData.batch}</span>
+                  <span className="text-gray-500">Batch / Year</span>
+                  <span className="font-medium">
+                    {profileData.batch}
+                  </span>
                 </div>
 
                 <div className="border rounded-lg p-3">
-                  <div className="flex justify-between items-center mb-1">
+                  <div className="flex justify-between items-center mb-2">
                     <span className="text-gray-500">Bio</span>
 
                     {!isEditingBio && (
                       <button
-                        className="text-sm text-blue-600 hover:underline"
+                        className="text-sm text-indigo-600 hover:underline"
                         onClick={handleEditBio}
                       >
                         Edit
@@ -187,22 +196,24 @@ function Profile() {
                   ) : (
                     <>
                       <textarea
-                        className="w-full border rounded-lg p-2 mt-1"
+                        className="w-full border rounded-lg p-2"
                         rows={3}
                         value={bioDraft}
-                        onChange={(e) => setBioDraft(e.target.value)}
+                        onChange={(e) =>
+                          setBioDraft(e.target.value)
+                        }
                       />
 
                       <div className="flex gap-2 mt-2">
                         <button
                           onClick={handleSaveBio}
-                          className="px-3 py-1 bg-green-500 text-white rounded"
+                          className="px-4 py-1.5 bg-green-600 text-white rounded-lg"
                         >
                           Save
                         </button>
                         <button
                           onClick={handleCancelBio}
-                          className="px-3 py-1 bg-gray-300 rounded"
+                          className="px-4 py-1.5 bg-gray-300 rounded-lg"
                         >
                           Cancel
                         </button>
@@ -210,21 +221,24 @@ function Profile() {
                     </>
                   )}
                 </div>
+
                 <div className="flex justify-between items-center border rounded-lg p-3">
                   <span className="text-gray-500">Joined</span>
                   <span className="font-medium">
                     {profileData.joined_at.slice(0, 10)}
                   </span>
                 </div>
+
               </div>
             </>
           )}
         </div>
-      </div>
+      </main>
+    </div>
 
-      <Footer />
-    </>
-  );
+    
+  </>
+);
 }
 
 export default Profile;

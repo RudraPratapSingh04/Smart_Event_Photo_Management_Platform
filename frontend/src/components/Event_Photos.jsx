@@ -2,8 +2,8 @@ import React from "react";
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Header from "./subcomponent/Header.jsx";
-import Footer from "./subcomponent/Footer.jsx";
- 
+
+import SideBar from "./subcomponent/Sidebar.jsx";
 function Event_Photos() {
   const { event_slug } = useParams();
   const [photos, setPhotos] = useState([]);
@@ -45,6 +45,7 @@ function Event_Photos() {
   const [aiTags, setAiTags] = useState([])
   const [showAiTags, setShowAiTags] = useState(false);
   const [photoSearchQuery, setPhotoSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState("grid"); 
   useEffect(() => {
     if (!isImageOpen || !photos[imageSelected]) {
       return;
@@ -249,16 +250,7 @@ function Event_Photos() {
     fetchPhotos();
   }, [event_slug]);
 
-  if (loading) {
-    return (
-      <div
-        className="mx-auto w-full h-full flex items-middle justify-center
-                text-2xl font-bold p-5"
-      >
-        Loading photos...
-      </div>
-    );
-  }
+  
   const handleLike = async () => {
     const csrfToken = getCSRFToken();
     try {
@@ -342,40 +334,108 @@ function Event_Photos() {
   const displayEventPhotos =
     photos.length > 0 ? (
       <div className="p-4 overflow-x-auto">
-        <div className=" grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 border gap-4 border-gray-300">
-          {photos.map((photo, index) => {
-            const isSelected = selectedPhotoIds.includes(photo.id);
-            return (
-              <div
-                key={photo.id}
-                className="relative"
-                onClick={() => {
-                  if (selectMode) {
-                    setSelectedPhotoIds((prev) =>
-                      prev.includes(photo.id)
-                        ? prev.filter((id) => id !== photo.id)
-                        : [...prev, photo.id]
-                    );
-                  } else {
-                    setImageSelected(index);
-                    setIsImageOpen(true);
-                  }
-                }}
-              >
-                <img
-                  src={photo.image}
-                  alt="Event"
-                  className={`w-full h-40 object-cover ${isSelected ? "opacity-80" : ""}`}
-                />
-                {selectMode && (
-                  <span className={`absolute top-2 right-2 px-2 py-1 square rounded text-white text-sm ${isSelected ? "bg-green-400" : "bg-gray-600"}`}>
-                    {isSelected ? "" : ""}
-                  </span>
-                )}
+        {viewMode === "grid" && (
+          <div className=" grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 border gap-4 border-gray-300">
+            {photos.map((photo, index) => {
+              const isSelected = selectedPhotoIds.includes(photo.id);
+              return (
+                <div
+                  key={photo.id}
+                  className="relative"
+                  onClick={() => {
+                    if (selectMode) {
+                      setSelectedPhotoIds((prev) =>
+                        prev.includes(photo.id)
+                          ? prev.filter((id) => id !== photo.id)
+                          : [...prev, photo.id]
+                      );
+                    } else {
+                      setImageSelected(index);
+                      setIsImageOpen(true);
+                    }
+                  }}
+                >
+                  <img
+                    src={photo.image}
+                    alt="Event"
+                    className={`w-full h-40 object-cover ${isSelected ? "opacity-80" : ""}`}
+                  />
+                  {selectMode && (
+                    <span className={`absolute top-2 right-2 px-2 py-1 square rounded text-white text-sm ${isSelected ? "bg-green-400" : "bg-gray-600"}`}>
+                      {isSelected ? "" : ""}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {viewMode === "masonry" && (
+          <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4">
+            {photos.map((photo, index) => {
+              const isSelected = selectedPhotoIds.includes(photo.id);
+              return (
+                <div
+                  key={photo.id}
+                  className={`mb-4 break-inside-avoid relative ${isSelected ? "opacity-80" : ""}`}
+                  onClick={() => {
+                    if (selectMode) {
+                      setSelectedPhotoIds((prev) =>
+                        prev.includes(photo.id)
+                          ? prev.filter((id) => id !== photo.id)
+                          : [...prev, photo.id]
+                      );
+                    } else {
+                      setImageSelected(index);
+                      setIsImageOpen(true);
+                    }
+                  }}
+                >
+                  <img src={photo.image} alt="Event" className="w-full object-cover rounded-lg mb-2" />
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {viewMode === "date" && (
+          <div className="space-y-6">
+            {Object.entries(
+              photos.reduce((acc, photo) => {
+                const date = photo.uploaded_at ? photo.uploaded_at.slice(0, 10) : "Unknown";
+                if (!acc[date]) acc[date] = [];
+                acc[date].push(photo);
+                return acc;
+              }, {}),
+            ).map(([date, list]) => (
+              <div key={date}>
+                <h3 className="font-semibold mb-2">{date}</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {list.map((photo, index) => (
+                    <div
+                      key={photo.id}
+                      className="relative"
+                      onClick={() => {
+                        const globalIndex = photos.findIndex((p) => p.id === photo.id);
+                        if (selectMode) {
+                          setSelectedPhotoIds((prev) =>
+                            prev.includes(photo.id)
+                              ? prev.filter((id) => id !== photo.id)
+                              : [...prev, photo.id]
+                          );
+                        } else {
+                          setImageSelected(globalIndex);
+                          setIsImageOpen(true);
+                        }
+                      }}
+                    >
+                      <img src={photo.image} alt="Event" className="w-full h-40 object-cover" />
+                    </div>
+                  ))}
+                </div>
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     ) : (
       <div className="p-4 text-gray-500">
@@ -501,34 +561,59 @@ function Event_Photos() {
   
     const csrfToken = getCSRFToken();
     try{
-      const response=await fetch(`http://localhost:8000/api/delete_photos/${event_slug}/`,{
-
-        method:"DELETE",
-        credentials:"include",
-        headers:{
-          "Content-Type":"application/json",
-          "X-CSRFToken":csrfToken,
+      const response = await fetch(`http://localhost:8000/api/delete_photos/${event_slug}/`, {
+        method: "DELETE",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": csrfToken,
         },
-        body:JSON.stringify({
-          photo_ids:selectedPhotoIds,
-          event_slug:event_slug,
+        body: JSON.stringify({
+          photo_ids: selectedPhotoIds,
+          event_slug: event_slug,
         }),
       });
-      if(response.ok){
+
+      if (response.ok) {
         setSelectedPhotoIds([]);
         setSelectMode(false);
         await fetchPhotos();
-      }else{
-        setDeletePhotoError("You do not have access to delete these images");
-       
+        return;
       }
+
+    
+      const text = await response.text();
+      console.error("Delete response not OK", response.status, text);
+      if (response.status === 405) {
+        console.log("DELETE not allowed, attempting POST fallback");
+        const postResp = await fetch(`http://localhost:8000/api/delete_photos/${event_slug}/`, {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrfToken,
+          },
+          body: JSON.stringify({ photo_ids: selectedPhotoIds, event_slug }),
+        });
+        const postText = await postResp.text();
+        if (postResp.ok) {
+          setSelectedPhotoIds([]);
+          setSelectMode(false);
+          await fetchPhotos();
+          return;
+        }
+        console.error("POST fallback failed", postResp.status, postText);
+        setDeletePhotoError(`Delete failed: ${postResp.status} ${postText}`);
+        return;
+      }
+
+      setDeletePhotoError(`Delete failed: ${response.status} ${text}`);
     } catch (error) {
       setDeletePhotoError("Error deleting photos.");
       console.error("Error deleting photos:", error);
     } finally {
       setSelectMode(false);
       setSelectedPhotoIds([]);
-      // setDeletePhotoError("");
     }
 }
   const uploadPhoto = async () => {
@@ -550,49 +635,83 @@ function Event_Photos() {
   return (
     <>
       <Header />
-      <div>
-        <div>Event_Photos</div>
-        <button
-          onClick={uploadPhoto}
-          className="bg-green-400 p-2 bold text-xl text-white"
-        >
-          Upload Photos
-        </button>
-        <button
-          onClick={toggleSelectMode}
-          className={`p-2 bold text-xl text-white ${selectMode ? "bg-blue-700" : "bg-blue-500"}`}
-        >
-          {selectMode ? "Cancel Selection" : "Select Photos"}
-        </button>
-        <button
-          onClick={deletePhoto}
-          className="bg-red-600 p-2 bold text-xl text-white"
-        >
-          Delete Photos
-        </button>
+      <div className="flex">
+        <SideBar />
+        <main className="ml-64 flex-1 min-h-screen bg-gray-100 p-6">
+          <div className="mb-4 w-full">
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={uploadPhoto}
+                  className="bg-indigo-600 text-white px-3 py-2 rounded-lg text-sm"
+                >
+                  Upload
+                </button>
 
-        {uploadPhotoError && (
-          <div className="text-red-500 mt-2">{uploadPhotoError}</div>
-        )}
-        {deletePhotoError && (
-          <div className="text-red-500 mt-2">{deletePhotoError}</div>
-        )}
-      </div>
-      <search>
-    <input 
-    onChange={(e)=>{
-      setPhotoSearchQuery(e.target.value)
-      handlePhotoSearch(e.target.value)
-    }}
-    type="search"  className='' placeholder="Search photos with upload date or AI tags" />
-    
-  </search>
-      
-      {displayEventPhotos && displayEventPhotos ? (
-        displayEventPhotos
-      ) : (
-        <div>No photos available for this event.</div>
-      )}
+                <button
+                  onClick={toggleSelectMode}
+                  className="bg-gray-200 text-gray-800 px-3 py-2 rounded-lg text-sm"
+                >
+                  {selectMode ? "Exit Select" : "Select"}
+                </button>
+
+                <button
+                  onClick={deletePhoto}
+                  className="bg-red-600 text-white px-3 py-2 rounded-lg text-sm"
+                >
+                  Delete
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setViewMode("grid")}
+                  className={`px-2 py-1 rounded text-sm ${viewMode === "grid" ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-800"}`}
+                >
+                  Grid
+                </button>
+                <button
+                  onClick={() => setViewMode("masonry")}
+                  className={`px-2 py-1 rounded text-sm ${viewMode === "masonry" ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-800"}`}
+                >
+                  Masonry
+                </button>
+                <button
+                  onClick={() => setViewMode("date")}
+                  className={`px-2 py-1 rounded text-sm ${viewMode === "date" ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-800"}`}
+                >
+                  By Date
+                </button>
+              </div>
+            </div>
+            {uploadPhotoError && (
+              <div className="text-sm text-red-500 mb-2">{uploadPhotoError}</div>
+            )}
+            {deletePhotoError && (
+              <div className="text-sm text-red-500 mb-2">{deletePhotoError}</div>
+            )}
+
+            <input
+              onChange={(e) => {
+                setPhotoSearchQuery(e.target.value);
+                handlePhotoSearch(e.target.value);
+              }}
+              type="search"
+              className="w-full rounded px-3 py-2 border border-gray-300"
+              placeholder="Search photos with upload date or AI tags"
+            />
+          </div>
+
+          {loading ? (
+            <div className="mx-auto w-full h-48 flex items-center justify-center text-2xl font-bold p-5">
+              Loading photos...
+            </div>
+          ) : displayEventPhotos ? (
+            displayEventPhotos
+          ) : (
+            <div>No photos available for this event.</div>
+          )}
+        </main>
       {uploading && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white p-6 rounded-lg shadow-lg">
@@ -603,7 +722,7 @@ function Event_Photos() {
   
       {showModal && (
         <div className="fixed inset-0 flex flex-col items-center justify-center bg-black bg-opacity-50">
-          {/* <div className="bg-amber-300">Upload here</div> */}
+        
           <div
             onDragEnter={handleDrag}
             onDragOver={handleDrag}
@@ -663,303 +782,129 @@ function Event_Photos() {
       )}
 
       {isImageOpen && (
-        <div className="overflow-x-auto fixed inset-0 z-50 bg-black-800 bg-black bg-opacity-80 flex flex-col items-center justify-center">
-          <div className="relative max-w-6xl w-full flex items-center justify-center">
-            <button
-              className="absolute top-4 right-4 text-white text-3xl"
-              onClick={() => setIsImageOpen(false)}
-            >
-              ✕
-            </button>
-
-            {showTagSection && (
-              <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center">
-                <div className="bg-yellow-100 w-full max-w-md rounded-xl p-4 flex flex-col gap-3">
-                  <div className="flex justify-between items-center border-b pb-2">
-                    <h1 className="text-gray-600 font-semibold">Tag Section</h1>
-                    <button
-                      onClick={() => {
-                        setShowTagSection(false);
-                        setShowTagUserInput(false);
-                        setTagQuery("");
-
-                        setSearchResults([]);
-                      }}
-                      className="text-xl font-bold text-gray-600"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <div className="bg-pink-200 p-3 rounded-lg">
-                    <h2 className="font-semibold mb-2">Tagged By</h2>
-
-                    {taggedBy.length > 0 ? (
-                      taggedBy.map((user) => (
-                        <p key={user.id} className="text-gray-700">
-                          @{user.username}
-                        </p>
-                      ))
-                    ) : (
-                      <p className="text-gray-500">No one has tagged yet</p>
-                    )}
-                  </div>
-                  <div className="bg-pink-200 p-3 rounded-lg">
-                    <div className="flex justify-between items-center mb-2">
-                      <h2 className="font-semibold">Tagged Users</h2>
-                      <button
-                        className="bg-amber-700 text-white p-2 rounded-xl"
-                        onClick={() => {
-                          setShowTagUserInput(!showTagUserInput);
-                          setTagQuery("");
-                          setSearchResults([]);
-                        }}
-                      >
-                        {showTagUserInput ? "Hide search" : "Tag a friend"}
-                      </button>
-                    </div>
-                    {showTagUserInput && (
-                      <div className="mb-3">
-                        <input
-                          type="text"
-                          value={tagQuery}
-                          onChange={(e) => {
-                            setTagQuery(e.target.value);
-                            searchUsers(e.target.value);
-                          }}
-                          placeholder="Search username..."
-                          className="w-full p-2 rounded border"
-                        />
-                        {tagging && (
-                          <p className="text-xs text-gray-600 mt-1">
-                            Tagging...
-                          </p>
-                        )}
-                        {searchResults.length > 0 && (
-                          <div className="bg-white mt-1 rounded shadow max-h-40 overflow-y-auto">
-                            {searchResults.map((user) => (
-                              <div
-                                key={user.id}
-                                className="p-2 hover:bg-gray-100 cursor-pointer"
-                                onClick={() => tagUser(user.id)}
-                              >
-                                @{user.username}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        {!tagging && tagQuery && searchResults.length === 0 && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            No users found
-                          </p>
-                        )}
-                      </div>
-                    )}
-                    {taggedUsers.length === 0 ? (
-                      <p className="text-gray-500">No users tagged</p>
-                    ) : (
-                      <ul className="space-y-1">
-                        {taggedUsers.map((user) => (
-                          <li key={user.id} className="text-gray-700">
-                            @{user.username}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-            {showCommentSection && (
-              <>
-                <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center">
-                  <div className="bg-yellow-100 w-full max-w-md rounded-xl p-4 flex flex-col gap-3">
-                    <div className="flex justify-between items-center pb-2">
-                      <h1 className="text-gray-600 font-semibold">
-                        Comments Section
-                      </h1>
-                      <button
-                        onClick={async () => {
-                          setShowCommentSection(false);
-
-                          const csrfToken = getCSRFToken();
-                          try {
-                            const response = await fetch(
-                              "http://localhost:8000/api/photo_properties/",
-                              {
-                                method: "POST",
-                                credentials: "include",
-                                headers: {
-                                  "Content-Type": "application/json",
-                                  "X-CSRFToken": csrfToken,
-                                },
-                                body: JSON.stringify({
-                                  photo_id: photos[imageSelected].id,
-                                }),
-                              },
-                            );
-                            if (response.ok) {
-                              const data = await response.json();
-                              setCommentsCount(data.comments_count);
-                            }
-                          } catch (err) {
-                            console.error(err);
-                          }
-                        }}
-                        className="text-xl font-bold text-gray-600"
-                      >
-                        ✕
-                      </button>
-                    </div>
-
-                    <input
-                      type="text"
-                      id="commentInput"
-                      placeholder="Type a comment here"
-                      className="bg-white p-2 rounded"
-                      onChange={(e) => {
-                        setComment(e.target.value);
-                      }}
-                    />
-                    <button
-                      className="bg-green-200 p-2 rounded-xl font-bold"
-                      onClick={() => {
-                        handleAddComment();
-                        document.getElementById("commentInput").value = "";
-                      }}
-                    >
-                      {" "}
-                      Add Comment
-                    </button>
-
-                    <div className="flex flex-col border-b pb-2 max-h-60 overflow-y-auto">
-                      {commentsData.length === 0 ? (
-                        <p className="text-gray-500">No comments yet</p>
-                      ) : (
-                        commentsData.map((comment) => (
-                          <div
-                            key={comment.id}
-                            className="min-w-100 border-b border-gray-300 pb-2 mb-2"
-                          >
-                            <div className="flex justify-between mb-1">
-                              <p className="font-semibold text-gray-700">
-                                @{comment.commented_by}
-                              </p>
-                              <p className="font-semibold text-gray-700 mr-2">
-                                {comment.commented_at.slice(11, 16)}
-                              </p>
-                            </div>
-                            <p className="text-gray-600">{comment.content}</p>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-            {imageSelected > 0 && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-80 flex items-center justify-center p-4">
+          <div className="relative w-full max-w-7xl h-[90vh] flex items-stretch gap-6">
+            <div className="flex-1 flex items-center justify-center bg-transparent relative">
+              <button className="absolute top-4 right-4 text-white text-3xl z-50" onClick={() => setIsImageOpen(false)}>✕</button>
               <button
-                className="absolute left-4 text-white text-4xl"
-                onClick={() => setImageSelected(imageSelected - 1)}
+                className={`absolute left-2 top-1/2 -translate-y-1/2 text-white text-4xl z-50 ${imageSelected === 0 ? 'opacity-40 cursor-not-allowed' : 'opacity-100'}`}
+                onClick={() => {
+                  if (imageSelected > 0) setImageSelected(imageSelected - 1);
+                }}
+                aria-label="Previous"
               >
                 ‹
               </button>
-            )}
-            <img
-              src={photos[imageSelected]?.image}
-              alt="Preview"
-              className="max-h-screen max-w-full object-contain"
-            />
 
-            {imageSelected < photos.length - 1 && (
+              <img src={photos[imageSelected]?.image} alt="Preview" className="max-h-[88vh] max-w-full object-contain rounded" />
+
               <button
-                className="absolute right-4 text-white text-4xl"
-                onClick={() => setImageSelected(imageSelected + 1)}
+                className={`absolute right-2 top-1/2 -translate-y-1/2 text-white text-4xl z-50 ${imageSelected === photos.length - 1 ? 'opacity-40 cursor-not-allowed' : 'opacity-100'}`}
+                onClick={() => {
+                  if (imageSelected < photos.length - 1) setImageSelected(imageSelected + 1);
+                }}
+                aria-label="Next"
               >
                 ›
               </button>
-            )}
-          </div>
-          <div className="text-white">
-            {likesCount} Likes {commentsCount} Comments{" "}
-          </div>
-          {showAiTags && <div className="text-white"> {photos[imageSelected]?.ai_tags?.join(", ")}</div>}
-          <div className=" gap-5 flex text-white mt-5 w-full justify-center max-w-6xl">
-            {isLiked ? (
-              <button
-                onClick={handleLike}
-                className="border-white p-2 bg-red-600 text-white rounded-xl"
-              >
-                Liked
-              </button>
-            ) : (
-              <button
-                onClick={handleLike}
-                className="border-white p-2 bg-white text-red-400 rounded-xl"
-              >
-                Like
-              </button>
-            )}
-
-            <button
-              onClick={loadCommentSection}
-              className="border-white p-2 bg-white text-red-400 rounded-xl"
-            >
-              Comment
-            </button>
-            <button
-              onClick={loadTagSection}
-              className="border-white p-2 bg-white text-red-400 rounded-xl"
-            >
-              Tag
-            </button>
-            {isFavourite ? (
-              <button
-                onClick={handleFavourite}
-                className="border-white p-2 bg-red-600 text-white rounded-xl"
-              >
-                Added to Favourites
-              </button>
-            ) : (
-              <button
-                onClick={handleFavourite}
-                className="border-white p-2 bg-white text-red-400 rounded-xl"
-              >
-                Add to Favourites
-              </button>
-            )}
-
-            <button
-              onClick={() => {
-                handleDownload();
-              }}
-              className="border-white p-2 bg-white text-red-400 rounded-xl"
-            >
-              Download
-            </button>
-              <button 
-              className="border-white p-2 bg-white text-red-400 rounded-xl"
-              onClick={() => setShowAiTags(!showAiTags)}>AI Tags</button>
-            <button
-              onClick={handleShowProperties}
-              className="border-white p-2 bg-white text-red-400 rounded-xl"
-            >
-              Properties
-            </button>
-          </div>
-          {showProperties && (
-            <div className="text-white mt-5 ">
-              <p>Shutter_speed:{shutterSpeed}</p>
-              <p>Camera Model:{cameraModel}</p>
-              <p>GPS Location : {gpsLocation}</p>
-              <p>Upload Date : {uploadDate.slice(0, 10)}</p>
-              <p>Aperture:{aperture}</p>
             </div>
-          )}
+
+            <aside className="w-96 bg-white rounded-lg p-4 overflow-y-auto shadow-lg">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="text-lg font-semibold">{photos[imageSelected]?.title || 'Photo'}</h3>
+                  <p className="text-sm text-gray-500">{uploadDate ? uploadDate.slice(0,10) : ''}</p>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm text-gray-600">{likesCount} Likes</div>
+                  <div className="text-sm text-gray-600">{commentsCount} Comments</div>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2 mb-4">
+                <button onClick={handleLike} className={`w-full py-2 rounded ${isLiked ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-800'}`}>{isLiked ? 'Liked' : 'Like'}</button>
+                <button onClick={() => { loadCommentSection(); setShowCommentSection(true); }} className="w-full py-2 rounded bg-green-50 text-green-800">Comments</button>
+                <button onClick={() => { loadTagSection(); setShowTagSection(true); }} className="w-full py-2 rounded bg-blue-50 text-blue-800">Tags</button>
+                <button onClick={handleFavourite} className={`w-full py-2 rounded ${isFavourite ? 'bg-yellow-600 text-white' : 'bg-gray-100 text-gray-800'}`}>{isFavourite ? 'Added to Favourites' : 'Add to Favourites'}</button>
+                <button onClick={handleDownload} className="w-full py-2 rounded bg-gray-100 text-gray-800">Download</button>
+                <button onClick={() => setShowAiTags(!showAiTags)} className="w-full py-2 rounded bg-white text-indigo-600 border">AI Tags</button>
+                <button onClick={handleShowProperties} className="w-full py-2 rounded bg-gray-100 text-gray-800">Properties</button>
+              </div>
+
+              {showProperties && (
+                <div className="bg-gray-50 p-3 rounded mb-3">
+                  <p className="text-sm">Shutter speed: <span className="font-medium">{shutterSpeed}</span></p>
+                  <p className="text-sm">Camera Model: <span className="font-medium">{cameraModel}</span></p>
+                  <p className="text-sm">GPS Location: <span className="font-medium">{gpsLocation}</span></p>
+                  <p className="text-sm">Upload Date: <span className="font-medium">{uploadDate ? uploadDate.slice(0,10) : ''}</span></p>
+                  <p className="text-sm">Aperture: <span className="font-medium">{aperture}</span></p>
+                </div>
+              )}
+              {showAiTags && (
+                <div className="bg-indigo-50 p-3 rounded mb-3">
+                  <h4 className="text-sm font-semibold text-indigo-700 mb-2">AI Tags</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {(aiTags && aiTags.length > 0) ? aiTags.map((t, i) => (
+                      <span key={i} className="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded">{t}</span>
+                    )) : (
+                      <p className="text-sm text-gray-500">No AI tags available</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {showTagSection && (
+                <div className="mb-3">
+                  <div className="bg-blue-100 p-3 rounded-t flex items-center justify-between">
+                    <h4 className="font-semibold text-blue-800">Tags</h4>
+                    <button onClick={() => setShowTagSection(false)} className="text-sm text-gray-600">Close</button>
+                  </div>
+                  <div className="border rounded-b p-3 bg-white">
+                    <div className="mb-2">
+                      <h5 className="text-sm font-medium text-gray-700">Tagged By</h5>
+                      {taggedBy.length > 0 ? taggedBy.map((u) => (<p key={u.id} className="text-sm text-gray-700">@{u.username}</p>)) : (<p className="text-sm text-gray-500">No one has tagged yet</p>)}
+                    </div>
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <h5 className="text-sm font-medium text-gray-700">Tagged Users</h5>
+                        <button className="text-sm text-indigo-600" onClick={() => { setShowTagUserInput(!showTagUserInput); setTagQuery(''); setSearchResults([]); }}>{showTagUserInput ? 'Hide' : 'Tag'}</button>
+                      </div>
+                      {showTagUserInput && (
+                        <div className="mb-2">
+                          <input type="text" value={tagQuery} onChange={(e) => { setTagQuery(e.target.value); searchUsers(e.target.value); }} placeholder="Search username..." className="w-full p-2 border rounded" />
+                          {searchResults.length > 0 && (<div className="mt-2 rounded shadow max-h-32 overflow-y-auto bg-white">{searchResults.map((user) => (<div key={user.id} className="p-2 hover:bg-gray-100 cursor-pointer" onClick={() => tagUser(user.id)}>@{user.username}</div>))}</div>)}
+                        </div>
+                      )}
+                      {taggedUsers.length === 0 ? (<p className="text-sm text-gray-500">No users tagged</p>) : (<ul className="space-y-1">{taggedUsers.map((user) => (<li key={user.id} className="text-sm text-gray-700">@{user.username}</li>))}</ul>)}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {showCommentSection && (
+                <div className="mb-3">
+                  <div className="bg-green-100 p-3 rounded-t flex items-center justify-between">
+                    <h4 className="font-semibold text-green-800">Comments</h4>
+                    <button onClick={() => setShowCommentSection(false)} className="text-sm text-gray-600">Close</button>
+                  </div>
+                  <div className="border rounded-b p-3 bg-white">
+                    <div className="mb-2">
+                      <input type="text" id="commentInput" placeholder="Type a comment here" className="w-full p-2 border rounded" onChange={(e) => setComment(e.target.value)} />
+                      <button className="mt-2 w-full bg-green-600 text-white py-2 rounded" onClick={() => { handleAddComment(); document.getElementById('commentInput').value = ''; }}>Add Comment</button>
+                    </div>
+                    <div className="max-h-60 overflow-y-auto">
+                      {commentsData.length === 0 ? (<p className="text-sm text-gray-500">No comments yet</p>) : (commentsData.map((c) => (<div key={c.id} className="border-b pb-2 mb-2"><div className="flex justify-between"><p className="font-semibold text-gray-700">@{c.commented_by}</p><p className="text-sm text-gray-500">{c.commented_at.slice(11,16)}</p></div><p className="text-gray-700">{c.content}</p></div>)))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </aside>
+          </div>
         </div>
       )}
-
-      <Footer />
+    
+</div>
+      
     </>
   );
 }

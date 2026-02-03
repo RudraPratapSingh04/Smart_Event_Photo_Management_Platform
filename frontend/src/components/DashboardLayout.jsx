@@ -2,7 +2,7 @@ import React from "react";
 import { Outlet } from "react-router-dom";
 import Header from "./subcomponent/Header.jsx";
 import Sidebar from "./subcomponent/Sidebar.jsx";
-import Footer from "./subcomponent/Footer.jsx";
+
 
 function DashboardLayout() {
 
@@ -12,12 +12,12 @@ function DashboardLayout() {
       <div className="min-h-screen bg-gray-100">
         <div className="w-full h-full bg-white flex">
           <Sidebar />
-          <main className="flex-1">
+          <main className="flex-1 ml-64">
             <Outlet />
           </main>
         </div>
       </div>
-      <Footer />
+      
     </>
   );
 }

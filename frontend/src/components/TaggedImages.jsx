@@ -53,7 +53,6 @@ function Event_Photos() {
     } catch (err) {
       console.error("Error toggling favourite:", err);
     } finally {
-      setIsImageOpen(false);
       fetchPhotos();
     }
   };
@@ -185,8 +184,6 @@ const loadTagSection = async () => {
     console.error(err);
   }
 };
-
-
   const fetchPhotos = async () => {
     try {
       console.log("Fetching favourite photos:");
@@ -256,23 +253,31 @@ const loadTagSection = async () => {
   };
   const displayEventPhotos =
     photos.length > 0 ? (
-      <div className="p-4 overflow-x-auto">
-        <div className=" grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 border gap-4 border-gray-300">
+      <div className="p-6">
+        <div
+          className="grid gap-4"
+          style={{ gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))" }}
+        >
           {photos.map((photo, index) => (
             <div
               key={photo.id}
               onClick={() => {
                 setImageSelected(index);
-
                 setIsImageOpen(true);
               }}
-              //   className="border border-gray-300 flex items-center justify-center p-2"
+              className="bg-white border rounded-lg overflow-hidden hover:shadow-md transition cursor-pointer"
             >
               <img
-                src={photo.image}
-                alt="Event"
-                className="w-full h-40 object-cover"
+                src={photo.thumbnail || photo.image}
+                alt="Tagged"
+                className="w-full h-36 object-cover"
               />
+
+              <div className="p-2 text-xs">
+                <p className="font-medium text-gray-800 truncate">
+                  {photo.event_name || "Event"}
+                </p>
+              </div>
             </div>
           ))}
         </div>
@@ -320,206 +325,105 @@ const loadTagSection = async () => {
 
   return (
     <>
-      <div>
-        <div></div>
+      <div className="p-6">
+        <div className="max-w-7xl">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-800">Tagged Images</h1>
+              <p className="text-sm text-gray-500">Photos you've been tagged in across events</p>
+            </div>
+          </div>
+        </div>
       </div>
       {displayEventPhotos && displayEventPhotos ? (
         displayEventPhotos
       ) : (
-        <div>No photos marked as favourites</div>
+        <div className="p-4 text-gray-500">You have not been tagged yet.</div>
       )}
 
       {isImageOpen && (
-        <div className="overflow-x-auto fixed inset-0 z-50 bg-black-800 bg-black bg-opacity-80 flex flex-col items-center justify-center">
-          <div className="relative max-w-6xl w-full flex items-center justify-center">
-            <button
-              className="absolute top-4 right-4 text-white text-3xl"
-              onClick={() => setIsImageOpen(false)}
-            >
-              ✕
-            </button>
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-80 flex items-center justify-center p-4">
+          <div className="relative w-full max-w-7xl h-[90vh] flex items-stretch gap-6">
+            <div className="flex-1 flex items-center justify-center bg-transparent relative">
+              <button className="absolute top-4 right-4 text-white text-3xl z-50" onClick={() => setIsImageOpen(false)}>✕</button>
 
-            {imageSelected > 0 && (
               <button
-                className="absolute left-4 text-white text-4xl"
-                onClick={() => setImageSelected(imageSelected - 1)}
+                className={`absolute left-2 top-1/2 -translate-y-1/2 text-white text-4xl z-50 ${imageSelected === 0 ? 'opacity-40 cursor-not-allowed' : 'opacity-100'}`}
+                onClick={() => { if (imageSelected > 0) setImageSelected(imageSelected - 1); }}
+                aria-label="Previous"
               >
                 ‹
               </button>
-            )}
-            <img
-              src={photos[imageSelected]?.image}
-              alt="Preview"
-              className="max-h-screen max-w-full object-contain"
-            />
 
-            {imageSelected < photos.length - 1 && (
+              <img src={photos[imageSelected]?.image} alt="Preview" className="max-h-[88vh] max-w-full object-contain rounded" />
+
               <button
-                className="absolute right-4 text-white text-4xl"
-                onClick={() => setImageSelected(imageSelected + 1)}
+                className={`absolute right-2 top-1/2 -translate-y-1/2 text-white text-4xl z-50 ${imageSelected === photos.length - 1 ? 'opacity-40 cursor-not-allowed' : 'opacity-100'}`}
+                onClick={() => { if (imageSelected < photos.length - 1) setImageSelected(imageSelected + 1); }}
+                aria-label="Next"
               >
                 ›
               </button>
-            )}
-          </div>
-          <div className="text-white">{likesCount} Likes</div>
-          <div className=" gap-5 flex text-white mt-5 w-full justify-center max-w-6xl">
-            {isLiked ? (
-              <button
-                onClick={handleLike}
-                className="border-white p-2 bg-red-600 text-white rounded-xl"
-              >
-                Liked
-              </button>
-            ) : (
-              <button
-                onClick={handleLike}
-                className="border-white p-2 bg-white text-red-400 rounded-xl"
-              >
-                Like
-              </button>
-            )}
-            {showTagSection && (
-              <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center">
-                <div className="bg-yellow-100 w-full max-w-md rounded-xl p-4 flex flex-col gap-3">
-                  <div className="flex justify-between items-center border-b pb-2">
-                    <h1 className="text-gray-600 font-semibold">Tag Section</h1>
-                    <button
-                      onClick={() => {
-                        setShowTagSection(false);
-                        setShowTagUserInput(false);
-                        setTagQuery("");
-                        setSearchResults([]);
-                      }}
-                      className="text-xl font-bold text-gray-600"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <div className="bg-pink-200 p-3 rounded-lg">
-                    <h2 className="font-semibold mb-2">Tagged By</h2>
+            </div>
 
-                    {taggedBy.length > 0 ? (
-                      taggedBy.map((user) => (
-                        <p key={user.id} className="text-gray-700">
-                          @{user.username}
-                        </p>
-                      ))
-                    ) : (
-                      <p className="text-gray-500">No one has tagged yet</p>
-                    )}
-                  </div>
-                  <div className="bg-pink-200 p-3 rounded-lg">
-                    <div className="flex justify-between items-center mb-2">
-                      <h2 className="font-semibold">Tagged Users</h2>
-                      <button
-                        className="bg-amber-700 text-white p-2 rounded-xl"
-                        onClick={() => {
-                          setShowTagUserInput(!showTagUserInput);
-                          setTagQuery("");
-                          setSearchResults([]);
-                        }}
-                      >
-                        {showTagUserInput ? "Hide search" : "Tag a friend"}
-                      </button>
-                    </div>
-                    {showTagUserInput && (
-                      <div className="mb-3">
-                        <input
-                          type="text"
-                          value={tagQuery}
-                          onChange={(e) => {
-                            setTagQuery(e.target.value);
-                            searchUsers(e.target.value);
-                          }}
-                          placeholder="Search username..."
-                          className="w-full p-2 rounded border"
-                        />
-                        {tagging && (
-                          <p className="text-xs text-gray-600 mt-1">
-                            Tagging...
-                          </p>
-                        )}
-                        {searchResults.length > 0 && (
-                          <div className="bg-white mt-1 rounded shadow max-h-40 overflow-y-auto">
-                            {searchResults.map((user) => (
-                              <div
-                                key={user.id}
-                                className="p-2 hover:bg-gray-100 cursor-pointer"
-                                onClick={() => tagUser(user.id)}
-                              >
-                                @{user.username}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        {!tagging && tagQuery && searchResults.length === 0 && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            No users found
-                          </p>
-                        )}
-                      </div>
-                    )}
-                    {taggedUsers.length === 0 ? (
-                      <p className="text-gray-500">No users tagged</p>
-                    ) : (
-                      <ul className="space-y-1">
-                        {taggedUsers.map((user) => (
-                          <li key={user.id} className="text-gray-700">
-                            @{user.username}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
+            <aside className="w-96 bg-white rounded-lg p-4 overflow-y-auto shadow-lg">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="text-lg font-semibold">{photos[imageSelected]?.title || 'Photo'}</h3>
+                  <p className="text-sm text-gray-500">{uploadDate ? uploadDate.slice(0,10) : ''}</p>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm text-gray-600">{likesCount} Likes</div>
+                  <div className="text-sm text-gray-600">{commentsCount} Comments</div>
                 </div>
               </div>
-            )}
-            <button
-              onClick={loadTagSection}
-              className="border-white p-2 bg-white text-red-400 rounded-xl"
-            >
-              Tag
-            </button>
-            {isFavourite ? (
-              <button
-                onClick={handleFavourite}
-                className="border-white p-2 bg-red-600 text-white rounded-xl"
-              >
-                Added to Favourites
-              </button>
-            ) : (
-              <button
-                onClick={handleFavourite}
-                className="border-white p-2 bg-white text-red-400 rounded-xl"
-              >
-                Add to Favourites
-              </button>
-            )}
-            <button
-              onClick={() => {
-               {handleDownload(photos[imageSelected]?.image);}
-              }}
-              className="border-white p-2 bg-white text-red-400 rounded-xl"
-            >
-              Download
-            </button>
-            <button
-              onClick={handleShowProperties}
-              className="border-white p-2 bg-white text-red-400 rounded-xl"
-            >
-              Properties
-            </button>
+
+              <div className="flex flex-col gap-2 mb-4">
+                <button onClick={handleLike} className={`w-full py-2 rounded ${isLiked ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-800'}`}>{isLiked ? 'Liked' : 'Like'}</button>
+                <button onClick={() => { loadTagSection(); setShowTagSection(true); }} className="w-full py-2 rounded bg-blue-50 text-blue-800">Tags</button>
+                <button onClick={handleFavourite} className={`w-full py-2 rounded ${isFavourite ? 'bg-yellow-600 text-white' : 'bg-gray-100 text-gray-800'}`}>{isFavourite ? 'Added to Favourites' : 'Add to Favourites'}</button>
+                <button onClick={handleDownload} className="w-full py-2 rounded bg-gray-100 text-gray-800">Download</button>
+                <button onClick={handleShowProperties} className="w-full py-2 rounded bg-gray-100 text-gray-800">Properties</button>
+              </div>
+
+              {showProperties && (
+                <div className="bg-gray-50 p-3 rounded mb-3">
+                  <p className="text-sm">Shutter speed: <span className="font-medium">{shutterSpeed}</span></p>
+                  <p className="text-sm">Camera Model: <span className="font-medium">{cameraModel}</span></p>
+                  <p className="text-sm">GPS Location: <span className="font-medium">{gpsLocation}</span></p>
+                  <p className="text-sm">Upload Date: <span className="font-medium">{uploadDate ? uploadDate.slice(0,10) : ''}</span></p>
+                  <p className="text-sm">Aperture: <span className="font-medium">{aperture}</span></p>
+                </div>
+              )}
+              {showTagSection && (
+                <div className="mb-3">
+                  <div className="bg-blue-100 p-3 rounded-t flex items-center justify-between">
+                    <h4 className="font-semibold text-blue-800">Tags</h4>
+                    <button onClick={() => setShowTagSection(false)} className="text-sm text-gray-600">Close</button>
+                  </div>
+                  <div className="border rounded-b p-3 bg-white">
+                    <div className="mb-2">
+                      <h5 className="text-sm font-medium text-gray-700">Tagged By</h5>
+                      {taggedBy.length > 0 ? taggedBy.map((u) => (<p key={u.id} className="text-sm text-gray-700">@{u.username}</p>)) : (<p className="text-sm text-gray-500">No one has tagged yet</p>)}
+                    </div>
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <h5 className="text-sm font-medium text-gray-700">Tagged Users</h5>
+                        <button className="text-sm text-indigo-600" onClick={() => { setShowTagUserInput(!showTagUserInput); setTagQuery(''); setSearchResults([]); }}>{showTagUserInput ? 'Hide' : 'Tag'}</button>
+                      </div>
+                      {showTagUserInput && (
+                        <div className="mb-2">
+                          <input type="text" value={tagQuery} onChange={(e) => { setTagQuery(e.target.value); searchUsers(e.target.value); }} placeholder="Search username..." className="w-full p-2 border rounded" />
+                          {searchResults.length > 0 && (<div className="mt-2 rounded shadow max-h-32 overflow-y-auto bg-white">{searchResults.map((user) => (<div key={user.id} className="p-2 hover:bg-gray-100 cursor-pointer" onClick={() => tagUser(user.id)}>@{user.username}</div>))}</div>)}
+                        </div>
+                      )}
+                      {taggedUsers.length === 0 ? (<p className="text-sm text-gray-500">No users tagged</p>) : (<ul className="space-y-1">{taggedUsers.map((user) => (<li key={user.id} className="text-sm text-gray-700">@{user.username}</li>))}</ul>)}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </aside>
           </div>
-          {showProperties && (
-            <div className="text-white mt-5 ">
-              <p>Shutter_speed:{shutterSpeed}</p>
-              <p>Camera Model:{cameraModel}</p>
-              <p>GPS Location : {gpsLocation}</p>
-              <p>Upload Date : {uploadDate.slice(0, 10)}</p>
-              <p>Aperture:{aperture}</p>
-            </div>
-          )}
         </div>
       )}
     </>

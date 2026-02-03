@@ -22,9 +22,15 @@ function NotificationCenter() {
       setConnectionStatus("connected");
     };
 
+    const currentUsername = localStorage.getItem("username") || null;
+
     ws.onmessage = (event) => {
       try {
         const notification = JSON.parse(event.data);
+        if (notification.type === "like" && currentUsername && notification.liked_by === currentUsername) {
+          return;
+        }
+
         const notificationKey = `${notification.type}_${notification.timestamp}_${notification.liked_by || notification.tagged_by}`;
         
         if (recentNotificationsRef.current.has(notificationKey)) {
@@ -108,8 +114,16 @@ function NotificationCenter() {
 
         {showNotifications && (
           <div className="absolute right-0 z-50 w-80 mt-2 bg-white rounded-lg shadow-xl">
-            <div className="p-4 border-b border-gray-200">
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
+              <button
+                onClick={() => setShowNotifications(false)}
+                className="text-gray-500 hover:text-gray-700 ml-2 p-1 rounded"
+                aria-label="Close notifications"
+                title="Close"
+              >
+                ✕
+              </button>
             </div>
             <div className="max-h-96 overflow-y-auto">
               {notifications.length === 0 ? (

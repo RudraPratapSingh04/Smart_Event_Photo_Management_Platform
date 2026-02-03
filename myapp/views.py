@@ -441,34 +441,26 @@ def toggle_like(request):
     
     if like_obj:
         like_obj.delete()
-        return Response({"message":"Photo unliked"},status=200)
-    else:
-        Like.objects.create(
-            liked_by=profile,
-            photo=photo
-        )
-    
-        notification_message = {
-            "type": "like",
-            "message": f"{profile.user.username} liked your photo in {photo.event.title}",
-            "liked_by": profile.user.username,
-            "event_name": photo.event.title,
-            "photo_id": photo.id,
-            "timestamp": str(timezone.now())
-        }
-        
-        try:
+        return Response({"message": "Photo unliked"}, status=200)
+
+    Like.objects.create(liked_by=profile, photo=photo)
+    try:
+        if uploader and uploader.user and uploader.user.id != request.user.id:
+            notification_message = {
+                "type": "like",
+                "message": f"{profile.user.username} liked your photo in {photo.event.title}",
+                "liked_by": profile.user.username,
+                "event_name": photo.event.title,
+                "photo_id": photo.id,
+                "timestamp": str(timezone.now()),
+            }
             async_to_sync(channel_layer.group_send)(
-                f'notifications_{uploader.user.id}',
-                {
-                    'type': 'send_notification',
-                    'notification': notification_message
-                }
+                f"notifications_{uploader.user.id}",
+                {"type": "send_notification", "notification": notification_message},
             )
-        except Exception as e:
-            pass
-        
-        return Response({"message":"Photo liked"},status=200)
+    except Exception:
+        pass
+    return Response({"message": "Photo liked"}, status=200)
     
 @api_view(['POST'])
 def toggle_favourite(request):
@@ -672,7 +664,26 @@ def add_comment(request):
         description=description,
         photo=photo
    )    
-    return Response({"message":"Comment added successfully"},status=200)
+    try:
+        channel_layer = get_channel_layer()
+        uploader = photo.uploader_id
+        if uploader and uploader.user and uploader.user.id != request.user.id:
+            notification_message = {
+                "type": "comment",
+                "message": f"{request.user.username} commented on your photo in {photo.event.title}",
+                "commented_by": request.user.username,
+                "event_name": photo.event.title,
+                "photo_id": photo.id,
+                "timestamp": str(timezone.now()),
+            }
+            async_to_sync(channel_layer.group_send)(
+                f"notifications_{uploader.user.id}",
+                {"type": "send_notification", "notification": notification_message},
+            )
+    except Exception:
+        pass
+
+    return Response({"message": "Comment added successfully"}, status=200)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
