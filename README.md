@@ -28,7 +28,7 @@ PhotoGo is an event-focused photo management and sharing application. It provide
 - Backend: Django + Django REST Framework
 - Real-time: Django Channels
 - Background jobs: Celery (Redis)
-- Storage: local filesystem by default (configurable for S3)
+- Storage: AWS S3
 
 ## Getting started (development)
 
@@ -85,13 +85,6 @@ npm run dev
 ## Real-time behavior
 
 Notifications are sent through Channels to per-user groups. The client connects via WebSocket to receive toast notifications and the notification list.
-
-## Roadmap
-
-1. Persist notifications and activity logs.
-2. Harden OAuth and OTP workflows (validation, rate limits).
-3. Add notification preferences per user.
-4. Improve AI tag quality and provide an admin review UI.
 
 ## Contributing
 
